@@ -44,6 +44,19 @@ app_license = "MIT"
 # role_home_page = {
 #	"Role": "home_page"
 # }
+fixtures = [
+
+	{"dt": "Custom Field", "filters": [
+		[
+			"name", "in", [
+				"Customer-custom_date_of_birth","Customer-custom_anniversary_date","Campaign-custom_start_date","Campaign-custom_end_date","Campaign-custom_column_break_tno0a",
+                "Campaign-custom_campaign_based_on","Campaign-custom_customer_type","Campaign-custom_last_purchased","Campaign-custom_last_contacted","Campaign-custom_customer_campaign_list_",
+                "Customer-custom_beautique","ToDo-custom_customer",""
+			]
+		]
+	]},
+	
+]
 
 # Generators
 # ----------

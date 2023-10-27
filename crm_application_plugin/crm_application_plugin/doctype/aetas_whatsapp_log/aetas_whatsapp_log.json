@@ -1,0 +1,77 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "AWL-.#####",
+ "creation": "2023-10-27 16:18:16.218965",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "message_by",
+  "message_to",
+  "column_break_uzc23",
+  "sent_on",
+  "mobile_number",
+  "message"
+ ],
+ "fields": [
+  {
+   "fieldname": "message_by",
+   "fieldtype": "Link",
+   "label": "Message By",
+   "options": "User"
+  },
+  {
+   "fieldname": "message_to",
+   "fieldtype": "Link",
+   "label": "Message To",
+   "options": "Customer"
+  },
+  {
+   "fieldname": "column_break_uzc23",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sent_on",
+   "fieldtype": "Datetime",
+   "label": "Sent On"
+  },
+  {
+   "fieldname": "mobile_number",
+   "fieldtype": "Data",
+   "label": "Mobile Number",
+   "options": "Phone"
+  },
+  {
+   "fieldname": "message",
+   "fieldtype": "Small Text",
+   "label": "Message"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2023-10-27 16:18:16.218965",
+ "modified_by": "Administrator",
+ "module": "Crm Application Plugin",
+ "name": "Aetas WhatsApp Log",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
