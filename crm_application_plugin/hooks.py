@@ -30,6 +30,9 @@ app_license = "MIT"
 
 # include js in doctype views
 # doctype_js = {"doctype" : "public/js/doctype.js"}
+doctype_js = {
+    "Campaign" : "custom_scripts/campaign.js"
+}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -51,7 +54,9 @@ fixtures = [
 			"name", "in", [
 				"Customer-custom_date_of_birth","Customer-custom_anniversary_date","Campaign-custom_start_date","Campaign-custom_end_date","Campaign-custom_column_break_tno0a",
                 "Campaign-custom_campaign_based_on","Campaign-custom_customer_type","Campaign-custom_last_purchased","Campaign-custom_last_contacted","Campaign-custom_customer_campaign_list_",
-                "Customer-custom_beautique","ToDo-custom_customer",""
+                "Customer-custom_boutique","ToDo-custom_customer","Item-custom_product_details","Item-custom_reference","Item-custom_collection","Item-custom_dial_size","Item-custom_dial_shape",
+                "Item-custom_case_material","Item-custom_column_break_dhzcs","Item-custom_diamonds","Item-custom_strap_bracelet","Item-custom_gender","Item-custom_movement","Item-custom_water_resistance",
+                "Item-custom_brand_warranty"
 			]
 		]
 	]},

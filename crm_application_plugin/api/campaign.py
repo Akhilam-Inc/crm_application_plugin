@@ -17,3 +17,17 @@ def create_campaign(campaign_name,start_date,end_date):
         create_response(200,"Campaign created successfully",cam_doc.name)
     except Exception as e:
         create_response(406,"Campaign creation failed",frappe.get_traceback())  
+
+@frappe.whitelist()
+def boutique_list():
+    # Get List of Botique
+    boutique_names = frappe.db.sql("""
+    select IFNULL(boutique_name,'') as boutique_name ,IFNULL(boutique_address,'') as botique_address,IFNULL(boutique_phone_no,'') as boutique_phone,
+    IFNULL(boutique_email_id,'') as boutique_email_id from`tabBoutique`""",as_dict=1)
+
+    if boutique_names:
+        create_response(200,"List of Boutique fetched successfully",boutique_names)
+        return 
+    else:
+        create_response(404, "No Records Found For Boutique Document!")
+        return 

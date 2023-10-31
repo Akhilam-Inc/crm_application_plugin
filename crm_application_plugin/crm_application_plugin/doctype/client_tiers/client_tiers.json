@@ -1,29 +1,48 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "field:beatique_name",
- "creation": "2023-10-27 17:43:06.099172",
+ "autoname": "field:tier",
+ "creation": "2023-10-28 12:39:41.183544",
  "default_view": "List",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "beatique_name"
+  "tier",
+  "min_purchase",
+  "column_break_g9lkk",
+  "max_purchase"
  ],
  "fields": [
   {
-   "fieldname": "beatique_name",
+   "fieldname": "tier",
    "fieldtype": "Data",
-   "label": "Beatique Name",
+   "label": "Tier",
    "unique": 1
+  },
+  {
+   "fieldname": "min_purchase",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Min Purchase"
+  },
+  {
+   "fieldname": "column_break_g9lkk",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "max_purchase",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Max Purchase"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-10-27 17:43:15.969538",
+ "modified": "2023-10-28 12:46:02.556435",
  "modified_by": "Administrator",
  "module": "Crm Application Plugin",
- "name": "Beautique",
+ "name": "Client Tiers",
  "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
@@ -40,7 +59,7 @@
    "write": 1
   }
  ],
- "sort_field": "modified",
+ "sort_field": "max_purchase",
  "sort_order": "DESC",
  "states": []
 }

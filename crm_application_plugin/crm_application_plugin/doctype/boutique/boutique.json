@@ -1,0 +1,73 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:boutique_name",
+ "creation": "2023-10-27 17:43:06.099172",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "boutique_name",
+  "boutique_warehouse",
+  "boutique_address",
+  "boutique_phone_no",
+  "boutique_email_id"
+ ],
+ "fields": [
+  {
+   "fieldname": "boutique_name",
+   "fieldtype": "Data",
+   "label": "boutique Name",
+   "unique": 1
+  },
+  {
+   "fieldname": "boutique_warehouse",
+   "fieldtype": "Link",
+   "label": "Boutique Warehouse",
+   "options": "Warehouse"
+  },
+  {
+   "fieldname": "boutique_address",
+   "fieldtype": "Data",
+   "label": "Boutique Address"
+  },
+  {
+   "fieldname": "boutique_phone_no",
+   "fieldtype": "Data",
+   "label": "Boutique Phone No",
+   "options": "Phone"
+  },
+  {
+   "fieldname": "boutique_email_id",
+   "fieldtype": "Data",
+   "label": "Boutique Email Id",
+   "options": "Email"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2023-10-30 17:45:16.620823",
+ "modified_by": "Administrator",
+ "module": "Crm Application Plugin",
+ "name": "Boutique",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -56,9 +56,9 @@ def login(usr,pwd,device_id=None):
 		"sales_id" : sales_person if sales_person is not None else "",
 		"sales_manager" : sales_manager == 1,
 		"company" : {
-			"name" : default_company_doc.name,
-			"email" : default_company_doc.email,
-			"website" : default_company_doc.website
+			"name" : default_company_doc.name or "",
+			"email" : default_company_doc.email or "",
+			"website" : default_company_doc.website or ""
 		}
 	}
 	frappe.response["token"] =  base64.b64encode(token_string.encode("ascii")).decode("utf-8")
