@@ -9,6 +9,13 @@ def get_assigned_customer_list():
 	# Get Frappe user from session, Get Employee for that user and fetch sales person for that employee.
 	# Get All Customers where the sales person is mentioned in sales team
 	try:
+		search = frappe.local.form_dict.search or ""
+		offset = int(frappe.local.form_dict.offset) if frappe.local.form_dict.offset else 0
+
+		condition = ("")
+		if search is not None and search != "":
+			condition += "and c.customer_name like %(search)s"
+
 		user = frappe.session.user
 		employee = frappe.get_value("Employee", {"user_id": user}, "name")
 		if not employee:
@@ -20,51 +27,70 @@ def get_assigned_customer_list():
 			create_response(404, "Sales Person not found for the current user.")
 			return
 
+		campaigns = ["Diwali Campaign"]
 		customer_data = frappe.db.sql("""
-			SELECT c.name, c.customer_name, c.custom_sales_person, c.mobile_no, c.email_id,
+			SELECT c.name, c.customer_name, c.custom_sales_person, c.mobile_no, c.email_id,c.custom_client_tiers,
 			(SELECT MAX(si.posting_date) FROM `tabSales Invoice` si WHERE si.customer = c.customer_name) AS last_purchase_date
 			FROM `tabCustomer` c
-			WHERE c.custom_sales_person = %s
-		""", (sales_person), as_dict=True)
+			WHERE c.custom_sales_person = %(sales_person)s {conditions} LIMIT %(offset)s,20
+		""".format(conditions = condition),{
+			"sales_person":sales_person,
+			"search" : "%"+search+"%",
+			"offset" : int(offset)
+		}, as_dict=True)
+
+		for row in customer_data:
+			row['campaigns'] = campaigns
 
 		create_response(200, "Assigned Customer List Fetched!", customer_data)
 		return
 
 	except Exception as e:
 		create_response(500, "An error occurred while getting assigned customer list", str(e))
-		return
-
+		return	
 
 
 @frappe.whitelist()
 def get_unassigned_customer_list():
-	# Implement Serach Function
-	# Get Frappe user from session, Get Employee for that user and fetch sales person for that employee.
-	# Get All Customers where the sales person is mentioned in sales team.
-	try:
-		user = frappe.session.user
-		employee = frappe.db.get_value("Employee",{"user_id" : user} ,"name")
-		if not employee:
-			create_response(404, "Employee not found for the current user.")
-			return	
+    try:
+        search = frappe.local.form_dict.search or ""
+        offset = int(frappe.local.form_dict.offset) if frappe.local.form_dict.offset else 0
+        limit = 20
 
-		sales_person = frappe.get_value("Sales Person", {"employee": employee}, "name")	
-		if not sales_person:
-			create_response(404, "Sales Person not found for the current user.")
-			return
+        condition = ""
+        condition_params = {}
+        if search is not None and search != "":
+            condition += " AND c.name LIKE %(search)s"
+            condition_params['search'] = f"%{search}%"
 
-		customer_list = frappe.db.sql("""
-		select c.name,c.mobile_no from`tabCustomer` c where c.custom_sales_person != %(sales_person)s OR c.custom_sales_person IS NULL			
-		""",{'sales_person':sales_person},as_dict = 1)
+        user = frappe.session.user
+        employee = frappe.db.get_value("Employee", {"user_id": user}, "name")
+        if not employee:
+            create_response(404, "Employee not found for the current user.")
+            return
 
-		if customer_list:
-			create_response(200, "Unassigned Customer List Fetched!", customer_list)
-			return
-		else:
-			create_response(406,"getting customer data failed!")
-			return	
-	except Exception as e:
-		create_response(500,"An error occurred while getting assigned customer list",e)	
+        sales_person = frappe.get_value("Sales Person", {"employee": employee}, "name")
+        if not sales_person:
+            create_response(404, "Sales Person not found for the current user.")
+            return
+
+        sql_query = f"""
+            SELECT c.name, c.mobile_no
+            FROM `tabCustomer` c
+            WHERE (c.custom_sales_person != %(sales_person)s OR c.custom_sales_person IS NULL) {condition}
+            LIMIT %(offset)s, %(limit)s
+        """
+
+        customer_list = frappe.db.sql(sql_query, {'sales_person': sales_person, 'offset': offset, 'limit': limit, **condition_params}, as_dict=1)
+
+        if customer_list:
+            create_response(200, "Unassigned Customer List Fetched!", customer_list)
+            return
+        else:
+            create_response(406, "Getting customer data failed!")
+            return
+    except Exception as e:
+        create_response(500, "An error occurred while getting assigned customer list", str(e))
 
 
 @frappe.whitelist()
@@ -74,9 +100,10 @@ def get_past_purchase_customer():
 		# Get Sales of this customer by based on customer parameter
 
 		customer_sales_data = frappe.db.sql("""
-		select si.posting_date,sii.item_name,si.rounded_total
+		select si.posting_date,sii.item_name,si.rounded_total as price, f.file_url
 		from`tabSales Invoice` si
 		Inner Join`tabSales Invoice Item` sii on si.name = sii.parent
+		LEFT JOIN `tabFile` f ON sii.item_code = f.attached_to_name
 		where si.customer = %(customer_name)s order by si.posting_date desc
 		""",{'customer_name':customer},as_dict=1)
 
@@ -166,6 +193,7 @@ def create_customer(customer_name,mobile_number,email_address,date_of_birth,anni
 			'address_line2':address_line2,
 			'city':city,
 			'state':state,
+			'pincode':pincode,
 			'links':[{
 				'link_doctype':'Customer',
 				'link_name':customer_doc.name
@@ -186,13 +214,13 @@ def create_customer(customer_name,mobile_number,email_address,date_of_birth,anni
 def get_customer_detail(customer_name):
 	try:
 		customer_detail = frappe.db.sql("""
-		select c.customer_name,c.custom_date_of_birth,c.custom_anniversary_date,c.custom_sales_person,
-		c.mobile_no,c.email_id,c.primary_address
+		select c.customer_name,c.custom_date_of_birth,c.custom_anniversary_date,c.custom_sales_person,c.custom_client_tiers,
+		c.mobile_no,c.email_id,c.primary_address,(SELECT MAX(si.posting_date) FROM `tabSales Invoice` si WHERE si.customer = c.customer_name) AS last_purchase_date
 		from `tabCustomer` c 
 		where customer_name = %(customer)s""", {'customer': customer_name}, as_dict=1)
 
 		if customer_detail:
-			create_response(200, "Customer Fetched!",customer_detail)
+			create_response(200, "Customer Fetched!",customer_detail[0])
 			return 
 		else:
 			create_response(406, "Customer data not found", "Customer data is incomplete or does not exist")

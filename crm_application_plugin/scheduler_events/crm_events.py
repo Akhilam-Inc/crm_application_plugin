@@ -37,3 +37,36 @@ def get_applicable_slab(sales):
             return item['tier']
 
     return None
+
+
+def assign_sales_person():
+    sales_person_sales_data = frappe.db.sql("""
+    select 
+    si.customer,si.posting_date,sum(sii.amount) as total,sii.custom_sales_person 
+    from `tabSales Invoice` si inner join `tabSales Invoice Item` sii on si.name = sii.parent 
+    where sii.custom_sales_person is not null and si.docstatus = 1 
+    group by si.customer,sii.custom_sales_person 
+    order by si.posting_date desc
+    """,as_dict = 1)
+
+    output = map_customer_to_salesperson_optimized(sales_person_sales_data)
+    
+    
+    for customer, sales_person in data.items():
+        frappe.db.set_value("Customer",customer,"custom_sales_person",sales_person)
+    
+
+def map_customer_to_salesperson_optimized(sales_data):
+    # Dictionary to hold the best sales record for each customer
+    customer_sales_map = {}
+
+    for record in sales_data:
+        customer = record['customer']
+        sales_info = (record['total'], record['posting_date'], record['custom_sales_person'])
+
+        # Update the record if it's either the first one, or a better one
+        if customer not in customer_sales_map or sales_info > customer_sales_map[customer]:
+            customer_sales_map[customer] = sales_info
+
+    # Construct the final mapping of customer to salesperson
+    return {customer: sales_info[2] for customer, sales_info in customer_sales_map.items()}

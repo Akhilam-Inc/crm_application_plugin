@@ -1,22 +1,33 @@
 import frappe
 from crm_application_plugin.api.utils import create_response
 
+
 @frappe.whitelist()
 def todo_list(date):
+    search = frappe.local.form_dict.search or ""
+    offset = int(frappe.local.form_dict.offset) if frappe.local.form_dict.offset else 0
+
+    condition = ""
+    condition_params = {}
+    if search:
+        condition += "AND t.description LIKE %(search)s"
+        condition_params['search'] = f"%{search}%"
+
     user = frappe.session.user
-    #get list of todo for perticular date for perticular user
-    todo_list = frappe.db.sql("""
-    select t.description
-    from`tabToDo` t
-    where t.allocated_to = %(user)s and date = %(date)s
-    """,{'user':user,'date':date},as_dict=1)
+    todo_list = frappe.db.sql(f"""
+        SELECT t.description
+        FROM `tabToDo` t
+        WHERE t.allocated_to = %(user)s AND date = %(date)s {condition}
+        LIMIT %(offset)s, 20
+    """, {'user': user, 'date': date, 'offset': offset, **condition_params}, as_dict=1)
 
     if todo_list:
-        create_response(200,"ToDo List Fetched successfully",todo_list)
+        create_response(200, "ToDo List Fetched successfully", todo_list)
         return
     else:
-        create_response(404,"No Records Found for ToDo list")
+        create_response(404, "No Records Found for ToDo list")
         return
+
 
 
 @frappe.whitelist()

@@ -1,37 +1,6 @@
 import frappe
 import json
 from frappe.utils import today,cint, getdate
-# @frappe.whitelist()
-# def create_todo(self):
-#     try:
-#         self = json.loads(self)
-
-#         for item in self['custom_customer_campaign_list_']:
-
-#             employee = frappe.db.get_value('Sales Person',item['sales_person'],'employee')
-#             user_id = frappe.db.get_value('Employee',employee,'user_id')
-
-#             if not user_id or not employee:
-#                 frappe.msgprint("Sales Person Employee mapping is not correctly done for your user:{0}, Kindly contact admin!".format(item['sales_person'])) 
-
-#             if not frappe.db.exists("ToDo",{'referenace_name':self['name'],'custom_customer':item['customer_name']}):
-#                 todo = frappe.new_doc("ToDo")
-#                 todo.description = self['description']
-#                 todo.status = 'Open'
-#                 todo.priority = 'High'
-#                 todo.allocated_to = user_id
-#                 todo.date = frappe.utils.today()
-#                 todo.custom_customer = item['customer_name']
-#                 todo.reference_type = 'Campaign'
-#                 todo.reference_name = self['name']
-                
-#                 todo.insert(ignore_permissions= 1)
-
-#         frappe.msgprint("Todos Created For Sales Person.")
-#     except Exception as e:
-#         frappe.log_error(message = frappe.get_traceback(),title = "ToDo Creation Failed")
-#         frappe.msgprint("An Error Occured for Creating ToDo From Campaign!")
-
 
 @frappe.whitelist()
 def create_todo(self):
@@ -66,6 +35,7 @@ def create_todo(self):
         frappe.log_error(message=frappe.get_traceback(), title="ToDo Creation Failed")
         frappe.msgprint("An Error Occurred while Creating ToDo From Campaign!")
 
+@frappe.whitelist()
 def get_customer_by_tiers(client_tier):
     client_list = frappe.db.sql("""
     select name,custom_sales_person,custom_client_tiers from `tabCustomer` where custom_client_tiers = %(tiers)s    
@@ -73,8 +43,9 @@ def get_customer_by_tiers(client_tier):
         'tiers' : client_tier
     }),as_dict = 1)
 
-    return client_tier
+    return client_list
 
+@frappe.whitelist()
 def get_sales_details(days, date = None):
 
     if date is None:
@@ -102,6 +73,7 @@ def get_sales_details(days, date = None):
         as_dict=1
     )
 
+@frappe.whitelist()
 def get_last_contacted(day):
     return  frappe.db.sql("""
     SELECT c.name,c.custom_sales_person,c.custom_client_tiers

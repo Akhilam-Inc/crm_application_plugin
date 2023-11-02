@@ -5,6 +5,13 @@ from crm_application_plugin.api.utils import create_response
 @frappe.whitelist()
 def get_product_list():
     try:
+        search = frappe.local.form_dict.search or ""
+        offset = int(frappe.local.form_dict.offset) if frappe.local.form_dict.offset else 0
+
+        condition = ("")
+        if search is not None and search != "":
+            condition += "and i.item_name like %(search)s or i.item_code like %(search)s"
+               
         user = frappe.session.user
         employee = frappe.get_value("Employee", {"user_id": user}, "name")
         if not employee:
@@ -22,13 +29,17 @@ def get_product_list():
             return
 
         item_details = frappe.db.sql("""
-            SELECT i.item_code, i.item_name, f.file_url, IFNULL(ip.price_list_rate, 0) as price_list_rate
+            SELECT i.item_code, i.item_name, f.file_url, IFNULL(ip.price_list_rate, 0) as price,1 as my_boutique,2 as other_boutique
             FROM `tabItem` i
             LEFT JOIN `tabFile` f ON i.name = f.attached_to_name
             LEFT JOIN `tabItem Price` ip ON i.item_code = ip.item_code AND ip.price_list = "Standard Selling"
-            WHERE f.attached_to_doctype = "Item"
+            WHERE f.attached_to_doctype = "Item" {conditions} 
             GROUP BY i.item_code, f.file_url
-        """, as_dict=1)
+            LIMIT %(offset)s,20
+            """.format(conditions = condition),{
+                "search" : "%"+search+"%",
+                "offset" : int(offset)
+        },as_dict=1)
 
         create_response(200, "Item data Fetched Successfully!", item_details)
         return
@@ -41,11 +52,11 @@ def get_product_list():
 def get_product_detail(item_code):
     # Get details of product baesd on parameter
     try:
-        item_data = []
+        
         item_details = frappe.db.sql("""
         select i.item_name,i.description,i.custom_reference,i.custom_collection,i.custom_dial_size,i.custom_dial_shape,i.custom_case_material,
-        i.custom_diamonds,i.custom_strap_bracelet,i.custom_gender,i.custom_movement,i.custom_water_resistance,i.custom_brand_warranty,
-        f.file_url
+        i.custom_diamonds,i.custom_strap_bracelet,i.custom_gender,i.custom_movement,i.custom_water_resistance,i.custom_brand_warranty, i.brand,
+        f.file_url, (SELECT b.custom_brand_logo FROM `tabBrand` b WHERE b.name = i.brand) AS brand_logo
         from`tabItem` i
         left join`tabFile` f on i.name = f.attached_to_name
         where f.attached_to_doctype = "Item" and i.name = %(item_code)s
@@ -69,13 +80,15 @@ def get_product_detail(item_code):
                 'movement': item_details[0]["custom_movement"] or '',
                 'water_resistance': item_details[0]["custom_water_resistance"] or '',
                 'brand_warranty': item_details[0]["custom_brand_warranty"] or '',
-                'item_price': item_price or '',
-                'image_info': [{'image_url': image['file_url']} for image in item_details if image.get('file_url')]
+                'brand_logo': item_details[0]["brand_logo"] or '',
+                'brand': item_details[0]["brand"] or '',
+                'price': item_price or 0.0,
+                'images': [image['file_url'] for image in item_details if image.get('file_url')]
                 # 'image_info': [{'image_url': url + image['file_url']} for image in item_details if image.get('file_url')]
             }
-            item_data.append(item_info)
+           
 
-        create_response(200, "Item data Fetched Successfully!", item_data)
+        create_response(200, "Item data Fetched Successfully!", item_info if item_details else {})
         return 
     except Exception as e:
         create_response(500,"An error occurred while getting data of item",e)
@@ -85,12 +98,15 @@ def get_product_detail(item_code):
 def brand_list():
     #get list of brand
     try:
+        offset = int(frappe.local.form_dict.offset) or 0
+
         brand_details = frappe.db.sql("""
         select b.name,f.file_url
         from`tabBrand` b
         left join`tabFile` f on b.name = f.attached_to_name
         where f.attached_to_doctype = 'Brand'
-        """,as_dict = 1)
+        LIMIT %(offset)s,20
+        """,{"offset" : int(offset)},as_dict = 1)
 
        
         create_response(200, "Brand List Fetched Successfully!", brand_details)

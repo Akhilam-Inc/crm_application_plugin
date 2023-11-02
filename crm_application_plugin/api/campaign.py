@@ -19,6 +19,20 @@ def create_campaign(campaign_name,start_date,end_date):
         create_response(406,"Campaign creation failed",frappe.get_traceback())  
 
 @frappe.whitelist()
+def campaign_list():
+    campaign_names = frappe.db.sql("""
+    select name,custom_start_date,custom_end_date,150 as no_of_clients
+    from`tabCampaign`
+    """,as_dict=1)
+
+    if campaign_names:
+        create_response(200,"List of Campaign fetched successfully",campaign_names)
+        return 
+    else:
+        create_response(404, "No Records Found For Campaign Document!")
+        return 
+
+@frappe.whitelist()
 def boutique_list():
     # Get List of Botique
     boutique_names = frappe.db.sql("""
