@@ -1,0 +1,1 @@
+# crm_application_plugin
