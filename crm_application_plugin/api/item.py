@@ -1,5 +1,6 @@
 import frappe
 from crm_application_plugin.api.utils import create_response
+from functools import reduce
 
 
 @frappe.whitelist()
@@ -98,19 +99,49 @@ def get_product_detail(item_code):
 def brand_list():
     #get list of brand
     try:
-        offset = int(frappe.local.form_dict.offset) or 0
-
+        
         brand_details = frappe.db.sql("""
-        select b.name,f.file_url
-        from`tabBrand` b
-        left join`tabFile` f on b.name = f.attached_to_name
-        where f.attached_to_doctype = 'Brand'
-        LIMIT %(offset)s,20
-        """,{"offset" : int(offset)},as_dict = 1)
-
+            SELECT
+                b.name AS brand_name,
+                f.file_url,
+                IFNULL(bp.title, '') AS pdf_title,
+                IFNULL(bv.title, '') AS video_title
+            FROM `tabBrand` b
+            LEFT JOIN `tabFile` f ON b.name = f.attached_to_name
+            LEFT JOIN `tabBrand Pdfs` bp ON b.name = bp.parent
+            LEFT JOIN `tabBrand Videos` bv ON b.name = bv.parent
+            WHERE f.attached_to_doctype = 'Brand'
+        """, as_dict=1)
+        
+        # Organize the data into a structured format
+        brand_info = reduce(training_subjects, brand_details ,{})
+        brand_info = list(map(lambda x : {
+            "name" : x["brand_name"],
+            "file_url" : x["file_url"],
+            "subjects" : list(x["subjects"])
+        },brand_info.values()))
        
-        create_response(200, "Brand List Fetched Successfully!", brand_details)
+        create_response(200, "Brand List Fetched Successfully!", brand_info)
         return 
     except Exception as e:
         create_response(500,"An error occurred while getting brand list",e)
         return   
+    
+    
+def training_subjects(acc , data):
+    brand = data["brand_name"]
+    if brand not in acc:
+        acc[brand] = {
+            'brand_name': brand,
+            'file_url': data['file_url'],
+            'subjects': set(),
+        }
+    
+    if data["pdf_title"]:
+        acc[brand]["subjects"].add(data["pdf_title"])
+    
+    if data["video_title"]:
+        acc[brand]["subjects"].add(data["video_title"])
+    
+    return acc
+               
