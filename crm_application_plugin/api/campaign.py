@@ -21,8 +21,8 @@ def create_campaign(campaign_name,start_date,end_date):
 @frappe.whitelist()
 def campaign_list():
     campaign_names = frappe.db.sql("""
-    select name,custom_start_date,custom_end_date,150 as no_of_clients
-    from`tabCampaign`
+    select c.name,c.custom_start_date,c.custom_end_date, count(cu.name) as no_of_clients
+    from `tabCampaign` c Inner Join `tabCampaign of Customers` cu on cu.parent = c.name group by c.name
     """,as_dict=1)
 
     if campaign_names:
