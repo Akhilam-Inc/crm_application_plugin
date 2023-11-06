@@ -57,7 +57,7 @@ def brand_training_list(brand, subject, type):
             brand_info['pdfs'] = brand_pdfs or []
             
             brand_videos = frappe.db.sql("""
-            select bv.title as name,bv.file_url as file
+            select bv.title as name,IFNULL(bv.file_url,'') as file
             from`tabBrand Videos` bv where bv.parent = "User Guide"
             """,as_dict=1)
             

@@ -12,9 +12,10 @@
  "fields": [
   {
    "fieldname": "title",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "in_list_view": 1,
-   "label": "Title"
+   "label": "Title",
+   "options": "Brand Training Subject"
   },
   {
    "fieldname": "file_url",
@@ -26,7 +27,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-11-03 13:20:03.957072",
+ "modified": "2023-11-06 11:36:26.627907",
  "modified_by": "Administrator",
  "module": "Crm Application Plugin",
  "name": "Brand Videos",

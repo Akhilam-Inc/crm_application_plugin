@@ -35,9 +35,20 @@ def campaign_list():
 @frappe.whitelist()
 def boutique_list():
     # Get List of Botique
+    search = frappe.local.form_dict.search or ""
+    offset = int(frappe.local.form_dict.offset) if frappe.local.form_dict.offset else 0
+    
+    condition = ("")
+    if search is not None and search != "":
+        condition += "where boutique_name like %(search)s"
+               
+    
     boutique_names = frappe.db.sql("""
-    select IFNULL(boutique_name,'') as boutique_name ,IFNULL(boutique_address,'') as botique_address,IFNULL(boutique_phone_no,'') as boutique_phone,
-    IFNULL(boutique_email_id,'') as boutique_email_id from`tabBoutique`""",as_dict=1)
+    select IFNULL(boutique_name,'') as boutique_name ,IFNULL(boutique_address,'') as boutique_address,IFNULL(boutique_phone_no,'') as boutique_phone,
+    IFNULL(boutique_email_id,'') as boutique_email_id from`tabBoutique`{conditions} LIMIT %(offset)s,20 """.format(conditions = condition),{
+            "search" : "%" + search + "%",
+            "offset" : offset
+        },as_dict=1)
 
     if boutique_names:
         create_response(200,"List of Boutique fetched successfully",boutique_names)
