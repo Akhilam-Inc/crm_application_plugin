@@ -11,10 +11,10 @@ def get_product_list():
 
         condition = ("")
         if search is not None and search != "":
-            condition += "and i.item_name like %(search)s or i.item_code like %(search)s"
+            condition += "Where i.item_name like %(search)s or i.item_code like %(search)s"
                
-        user = frappe.session.user
-        employee = frappe.get_value("Employee", {"user_id": user}, "name")
+        
+        employee = frappe.get_value("Employee", {"user_id": frappe.session.user}, "name")
         if not employee:
             create_response(404, "Employee not found for the current user.")
             return
@@ -29,17 +29,23 @@ def get_product_list():
             create_response(404, "Warehouse Not Define In Boutique Document!")
             return
 
+        price_list = frappe.db.get_value("Aetas CRM Configuration",None,'default_price_list')
+        if not price_list:
+            create_response(404, "Default price list is not defined in the settings!")
+            return
+
         item_details = frappe.db.sql("""
-            SELECT i.item_code, i.item_name, f.file_url, IFNULL(ip.price_list_rate, 0) as price,1 as my_boutique,2 as other_boutique
+            SELECT i.item_code, i.item_name, IFNULL(i.image,'') as image, IFNULL(ip.price_list_rate, 0) as price,(select IFNULL(actual_qty,0) from `tabBin` where item_code = i.item_code and warehouse = %(warehouse)s) as my_boutique,(select IFNULL(sum(actual_qty),0) from `tabBin` where item_code = i.item_code and warehouse != %(warehouse)s group by item_code) as other_boutique
             FROM `tabItem` i
-            LEFT JOIN `tabFile` f ON i.name = f.attached_to_name
-            LEFT JOIN `tabItem Price` ip ON i.item_code = ip.item_code AND ip.price_list = "Standard Selling"
-            WHERE f.attached_to_doctype = "Item" {conditions} 
-            GROUP BY i.item_code, f.file_url
+            LEFT JOIN `tabItem Price` ip ON i.item_code = ip.item_code AND ip.price_list = %(price_list)s
+            {conditions} 
+            GROUP BY i.item_code
             LIMIT %(offset)s,20
             """.format(conditions = condition),{
                 "search" : "%"+search+"%",
-                "offset" : int(offset)
+                "offset" : int(offset),
+                "price_list":price_list,
+                "warehouse":warehouse_name
         },as_dict=1)
 
         create_response(200, "Item data Fetched Successfully!", item_details)
@@ -145,3 +151,39 @@ def training_subjects(acc , data):
     
     return acc
                
+@frappe.whitelist()
+def stock_list_other_botique(item):
+    try:
+        employee = frappe.get_value("Employee", {"user_id": frappe.session.user}, "name")
+        if not employee:
+            create_response(404, "Employee not found for the current user.")
+            return
+
+        boutique_name = frappe.get_value("Sales Person", {"employee": employee}, "custom_botique")
+        if not boutique_name:
+            create_response(404, "Boutique Not Define For This Sales Person!")
+            return
+        
+        warehouse_name = frappe.db.get_value("Boutique",boutique_name,'boutique_warehouse')
+        if not warehouse_name:
+            create_response(404, "Warehouse not define in boutique document!")
+            return
+        
+        item_details = frappe.db.sql("""
+                SELECT i.item_code, i.item_name, IFNULL(i.image,'') as image,bn.actual_qty,bn.warehouse
+                FROM `tabItem` i
+                LEFT JOIN `tabBin` bn ON i.item_code = bn.item_code 
+                Where bn.warehouse != %(warehouse)s and i.item_code = %(item_code)s
+                
+                """,{
+                    "warehouse":warehouse_name,
+                    "item_code":item
+            },as_dict=1)
+        
+        
+        create_response(200, "Stock of item from other warehouses fetched successfully!", item_details)
+        return
+    except Exception as e:
+        create_response(406, "Something went Wrong!", frappe.get_traceback())
+        return
+        

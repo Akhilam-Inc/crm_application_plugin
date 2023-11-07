@@ -7,19 +7,26 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "set_client_tiers_based_on_days"
+  "set_client_tiers_based_on_days",
+  "default_price_list"
  ],
  "fields": [
   {
    "fieldname": "set_client_tiers_based_on_days",
    "fieldtype": "Int",
    "label": "Set client tiers based on days"
+  },
+  {
+   "fieldname": "default_price_list",
+   "fieldtype": "Link",
+   "label": "Default Price List",
+   "options": "Price List"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-10-28 12:47:49.008671",
+ "modified": "2023-11-06 12:55:51.390998",
  "modified_by": "Administrator",
  "module": "Crm Application Plugin",
  "name": "Aetas CRM Configuration",
