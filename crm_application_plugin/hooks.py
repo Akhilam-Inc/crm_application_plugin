@@ -56,7 +56,7 @@ fixtures = [
                 "Campaign-custom_campaign_based_on","Campaign-custom_customer_type","Campaign-custom_last_purchased","Campaign-custom_last_contacted","Campaign-custom_customer_campaign_list_",
                 "Customer-custom_boutique","ToDo-custom_customer","Item-custom_product_details","Item-custom_reference","Item-custom_collection","Item-custom_dial_size","Item-custom_dial_shape",
                 "Item-custom_case_material","Item-custom_column_break_dhzcs","Item-custom_diamonds","Item-custom_strap_bracelet","Item-custom_gender","Item-custom_movement","Item-custom_water_resistance",
-                "Item-custom_brand_warranty","Campaign-custom_client_tiers","Customer-custom_sales_person","Customer-custom_client_tiers"
+                "Item-custom_brand_warranty","Campaign-custom_client_tiers","Customer-custom_sales_person","Customer-custom_client_tiers","Sales Person-custom_botique"
 			]
 		]
 	]},
