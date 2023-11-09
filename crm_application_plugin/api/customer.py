@@ -19,12 +19,12 @@ def get_assigned_customer_list():
 		user = frappe.session.user
 		employee = frappe.get_value("Employee", {"user_id": user}, "name")
 		if not employee:
-			create_response(404, "Employee not found for the current user.")
+			create_response(406, "Employee not found for the current user.")
 			return
 
 		sales_person = frappe.get_value("Sales Person", {"employee": employee}, "name")
 		if not sales_person:
-			create_response(404, "Sales Person not found for the current user.")
+			create_response(406, "Sales Person not found for the current user.")
 			return
 
 		campaigns = ["Diwali Campaign"]
@@ -46,7 +46,7 @@ def get_assigned_customer_list():
 		return
 
 	except Exception as e:
-		create_response(500, "An error occurred while getting assigned customer list", str(e))
+		create_response(406, "An error occurred while getting assigned customer list", str(e))
 		return	
 
 
@@ -66,12 +66,12 @@ def get_unassigned_customer_list():
         user = frappe.session.user
         employee = frappe.db.get_value("Employee", {"user_id": user}, "name")
         if not employee:
-            create_response(404, "Employee not found for the current user.")
+            create_response(406, "Employee not found for the current user.")
             return
 
         sales_person = frappe.get_value("Sales Person", {"employee": employee}, "name")
         if not sales_person:
-            create_response(404, "Sales Person not found for the current user.")
+            create_response(406, "Sales Person not found for the current user.")
             return
 
         sql_query = f"""
@@ -83,14 +83,10 @@ def get_unassigned_customer_list():
 
         customer_list = frappe.db.sql(sql_query, {'sales_person': sales_person, 'offset': offset, 'limit': limit, **condition_params}, as_dict=1)
 
-        if customer_list:
-            create_response(200, "Unassigned Customer List Fetched!", customer_list)
-            return
-        else:
-            create_response(406, "Getting customer data failed!")
-            return
+        create_response(200, "Unassigned Customer List Fetched!", customer_list)
+        return
     except Exception as e:
-        create_response(500, "An error occurred while getting assigned customer list", str(e))
+        create_response(409, "An error occurred while getting assigned customer list", str(e))
 
 
 @frappe.whitelist()
@@ -107,14 +103,10 @@ def get_past_purchase_customer():
 		where si.customer = %(customer_name)s order by si.posting_date desc
 		""",{'customer_name':customer},as_dict=1)
 
-		if len(customer_sales_data) > 0:
-			create_response(200, "Past Purchase Of Customer List Fetched!", customer_sales_data)
-			return
-		else:
-			create_response(406,"getting customer sales data failed!")
-			return
+		create_response(200, "Past Purchase Of Customer List Fetched!", customer_sales_data)
+		return
 	except Exception as e:
-		create_response(500, "An error occurred while fetching customer sales data", e)	
+		create_response(406, "An error occurred while fetching customer sales data", e)	
 
 # @frappe.whitelist()
 # def get_customers():
@@ -151,7 +143,7 @@ def get_past_purchase_customer():
 @frappe.whitelist()
 def create_customer(customer_name,mobile_number,email_address,date_of_birth,anniversary_date,address_line1,address_line2,city,state,pincode):
 	if not customer_name or not mobile_number or not email_address or not address_line1 or not city or not state or not pincode:
-		create_response(400, "Invalid request data", "Please provide all mandatory field data.")
+		create_response(422, "Invalid request data", "Please provide all mandatory field data.")
 		return
 
 	try:
@@ -226,6 +218,6 @@ def get_customer_detail(customer_name):
 			create_response(406, "Customer data not found", "Customer data is incomplete or does not exist")
 			return
 	except Exception as e:
-		create_response(500, "Internal server error", str(e))
+		create_response(406, "Internal server error", str(e))
 		return
 

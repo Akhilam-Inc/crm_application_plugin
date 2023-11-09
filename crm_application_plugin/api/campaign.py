@@ -7,7 +7,7 @@ from crm_application_plugin.api.utils import create_response
 def create_campaign(campaign_name,start_date,end_date):
     try:
         if not campaign_name or not start_date or not end_date:
-            return create_response(400, "Invalid request data", "Please provide campaign_name, start_date, and end_date.")
+            return create_response(422, "Invalid request data", "Please provide campaign_name, start_date, and end_date.")
             
         cam_obj = frappe.new_doc("Campaign")
         cam_obj.campaign_name = campaign_name
@@ -25,12 +25,7 @@ def campaign_list():
     from `tabCampaign` c Inner Join `tabCampaign of Customers` cu on cu.parent = c.name group by c.name
     """,as_dict=1)
 
-    if campaign_names:
-        create_response(200,"List of Campaign fetched successfully",campaign_names)
-        return 
-    else:
-        create_response(404, "No Records Found For Campaign Document!")
-        return 
+    create_response(200,"List of Campaign fetched successfully",campaign_names)
 
 @frappe.whitelist()
 def boutique_list():
@@ -50,9 +45,4 @@ def boutique_list():
             "offset" : offset
         },as_dict=1)
 
-    if boutique_names:
-        create_response(200,"List of Boutique fetched successfully",boutique_names)
-        return 
-    else:
-        create_response(404, "No Records Found For Boutique Document!")
-        return 
+    create_response(200,"List of Boutique fetched successfully",boutique_names)

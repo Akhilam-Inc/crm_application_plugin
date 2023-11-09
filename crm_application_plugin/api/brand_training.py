@@ -8,7 +8,7 @@ def brand_training_list(brand, subject, type):
     if type == "training":
         # Check for missing mandatory fields
         if not brand or not subject:
-            return create_response(400, "Invalid request data", "Please provide all mandatory field data.")
+            return create_response(422, "Invalid request data", "Please provide all mandatory field data.")
 
         try:
             # Use frappe.db.sql to fetch data
@@ -69,7 +69,7 @@ def brand_training_list(brand, subject, type):
             
         except Exception as e:
             frappe.log_error(message=str(e), title="Error in user guide records")
-            create_response(500, "Internal Server Error", "An error occurred while processing your request.")
+            create_response(406, "Something Went Wrong", "An error occurred while processing your request.")
             return
         
 

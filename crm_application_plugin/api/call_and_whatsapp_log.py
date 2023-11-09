@@ -6,7 +6,7 @@ from crm_application_plugin.api.utils import create_response
 def create_call_log(call_by,call_to,mobile_no):
 	try:
 		if not call_by or not call_to or not mobile_no:
-			create_response(400, "Invalid request data", "Please provide call_by, call_to, and mobile_no.")
+			create_response(422, "Invalid request data", "Please provide call_by, call_to, and mobile_no.")
 			return 
 		
 		call_obj = frappe.new_doc("Aetas Call Log")
@@ -28,7 +28,7 @@ def create_call_log(call_by,call_to,mobile_no):
 def create_whatsapp_log(message_by,message_to,mobile_no,message):
 	try:
 		if not message_by or not message_to or not mobile_no:
-			create_response(400, "Invalid request data", "Please provide message_by, message_to, and mobile_no.")
+			create_response(422, "Invalid request data", "Please provide message_by, message_to, and mobile_no.")
 			return 
 		
 		whatsapp_obj = frappe.new_doc("Aetas WhatsApp Log")

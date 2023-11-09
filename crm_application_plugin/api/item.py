@@ -16,22 +16,22 @@ def get_product_list():
         
         employee = frappe.get_value("Employee", {"user_id": frappe.session.user}, "name")
         if not employee:
-            create_response(404, "Employee not found for the current user.")
+            create_response(406, "Employee not found for the current user.")
             return
 
         boutique_name = frappe.get_value("Sales Person", {"employee": employee}, "custom_botique")
         if not boutique_name:
-            create_response(404, "Boutique Not Define For This Sales Person!")
+            create_response(406, "Boutique Not Define For This Sales Person!")
             return
         
         warehouse_name = frappe.db.get_value("Boutique",boutique_name,'boutique_warehouse')
         if not warehouse_name:
-            create_response(404, "Warehouse Not Define In Boutique Document!")
+            create_response(406, "Warehouse Not Define In Boutique Document!")
             return
 
         price_list = frappe.db.get_value("Aetas CRM Configuration",None,'default_price_list')
         if not price_list:
-            create_response(404, "Default price list is not defined in the settings!")
+            create_response(406, "Default price list is not defined in the settings!")
             return
 
         item_details = frappe.db.sql("""
@@ -130,7 +130,7 @@ def brand_list():
         create_response(200, "Brand List Fetched Successfully!", brand_info)
         return 
     except Exception as e:
-        create_response(500,"An error occurred while getting brand list",e)
+        create_response(409,"An error occurred while getting brand list",e)
         return   
     
     
@@ -156,17 +156,17 @@ def stock_list_other_botique(item):
     try:
         employee = frappe.get_value("Employee", {"user_id": frappe.session.user}, "name")
         if not employee:
-            create_response(404, "Employee not found for the current user.")
+            create_response(406, "Employee not found for the current user.")
             return
 
         boutique_name = frappe.get_value("Sales Person", {"employee": employee}, "custom_botique")
         if not boutique_name:
-            create_response(404, "Boutique Not Define For This Sales Person!")
+            create_response(406, "Boutique Not Define For This Sales Person!")
             return
         
         warehouse_name = frappe.db.get_value("Boutique",boutique_name,'boutique_warehouse')
         if not warehouse_name:
-            create_response(404, "Warehouse not define in boutique document!")
+            create_response(406, "Warehouse not define in boutique document!")
             return
         
         item_details = frappe.db.sql("""
