@@ -63,15 +63,17 @@ def get_product_detail(item_code):
         item_details = frappe.db.sql("""
         select i.item_name,i.description,i.custom_reference,i.custom_collection,i.custom_dial_size,i.custom_dial_shape,i.custom_case_material,
         i.custom_diamonds,i.custom_strap_bracelet,i.custom_gender,i.custom_movement,i.custom_water_resistance,i.custom_brand_warranty, i.brand,
-        f.file_url, (SELECT b.custom_brand_logo FROM `tabBrand` b WHERE b.name = i.brand) AS brand_logo
-        from`tabItem` i
-        left join`tabFile` f on i.name = f.attached_to_name
-        where f.attached_to_doctype = "Item" and i.name = %(item_code)s
+        IFNULL(i.image,'') as file_url, (SELECT b.custom_brand_logo FROM `tabBrand` b WHERE b.name = i.brand) AS brand_logo
+        from`tabItem` i where i.name = %(item_code)s
         """,{'item_code':item_code},as_dict=1)
 
         item_price = frappe.db.get_value("Item Price",{'item_code':item_code},'price_list_rate')
         # url = frappe.utils.get_url()
-
+        slider_images = frappe.db.sql("""
+            select slider_image from `tabItem Image` where parent = %(item_code)s                              
+        """ , {
+            "item_code" : item_code
+        }, as_dict = 1)
         if item_details:
             item_info = {
                 'item_name':item_details[0]["item_name"] or '',
@@ -90,7 +92,7 @@ def get_product_detail(item_code):
                 'brand_logo': item_details[0]["brand_logo"] or '',
                 'brand': item_details[0]["brand"] or '',
                 'price': item_price or 0.0,
-                'images': [image['file_url'] for image in item_details if image.get('file_url')]
+                'images': [slider_image["slider_image"] for slider_image in slider_images if slider_image]
                 # 'image_info': [{'image_url': url + image['file_url']} for image in item_details if image.get('file_url')]
             }
            
