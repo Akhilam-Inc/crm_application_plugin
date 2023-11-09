@@ -22,7 +22,7 @@ def get_home_data():
         customer_counts = list(map(lambda x : {
             "tier" : x["tier"],
             "no_of_clients" : x["no_of_clients"],
-            "percentage" : round((x["no_of_clients"] / total) * 100, 2)
+            "percentage" : 0 if total == 0 else round((x["no_of_clients"] / total) * 100, 2)
         }, customer_counts))
      
     create_response(200 , "Home Data Fetched Successfully" , {
