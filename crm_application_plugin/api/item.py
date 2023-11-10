@@ -111,7 +111,7 @@ def brand_list():
         brand_details = frappe.db.sql("""
             SELECT
                 b.name AS brand_name,
-                b.brand_logo as file_url,
+                b.custom_brand_logo as file_url,
                 IFNULL(bp.title, '') AS pdf_title,
                 IFNULL(bv.title, '') AS video_title
             FROM `tabBrand` b

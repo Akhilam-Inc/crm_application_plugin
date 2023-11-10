@@ -38,7 +38,7 @@ def login(usr,pwd,device_id=None):
 	sales_person = None
 	sales_manager = 0
 	if employee:
-		sales_person,sales_manager = frappe.db.get_value("Sales Person" , {"employee" : employee} , ["name","is_group"])
+		sales_person,sales_manager, botique = frappe.db.get_value("Sales Person" , {"employee" : employee} , ["name","is_group", "custom_botique"])
 
 	if not sales_person  or not employee:
 		create_response(422 ,"Sales Person Employee mapping is not correctly done for your user, Kindly contact admin!")
@@ -55,6 +55,7 @@ def login(usr,pwd,device_id=None):
 		"email":user.email,
 		"sales_id" : sales_person if sales_person is not None else "",
 		"sales_manager" : sales_manager == 1,
+  		"boutique" : botique or "",
 		"company" : {
 			"name" : default_company_doc.name or "",
 			"email" : default_company_doc.email or "",
