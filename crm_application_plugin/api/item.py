@@ -111,14 +111,12 @@ def brand_list():
         brand_details = frappe.db.sql("""
             SELECT
                 b.name AS brand_name,
-                f.file_url,
+                b.brand_logo as file_url,
                 IFNULL(bp.title, '') AS pdf_title,
                 IFNULL(bv.title, '') AS video_title
             FROM `tabBrand` b
-            LEFT JOIN `tabFile` f ON b.name = f.attached_to_name
             LEFT JOIN `tabBrand Pdfs` bp ON b.name = bp.parent
             LEFT JOIN `tabBrand Videos` bv ON b.name = bv.parent
-            WHERE f.attached_to_doctype = 'Brand'
         """, as_dict=1)
         
         # Organize the data into a structured format
