@@ -11,7 +11,7 @@ def get_product_list():
 
         condition = ("")
         if search is not None and search != "":
-            condition += "Where i.item_name like %(search)s or i.item_code like %(search)s"
+            condition += "and (i.item_name like %(search)s or i.item_code like %(search)s)"
                
         
         employee = frappe.get_value("Employee", {"user_id": frappe.session.user}, "name")
@@ -37,7 +37,7 @@ def get_product_list():
         item_details = frappe.db.sql("""
             SELECT i.item_code, i.item_name, IFNULL(i.image,'') as image, IFNULL(ip.price_list_rate, 0) as price,(select IFNULL(actual_qty,0) from `tabBin` where item_code = i.item_code and warehouse = %(warehouse)s) as my_boutique,(select IFNULL(sum(actual_qty),0) from `tabBin` where item_code = i.item_code and warehouse != %(warehouse)s group by item_code) as other_boutique
             FROM `tabItem` i
-            LEFT JOIN `tabItem Price` ip ON i.item_code = ip.item_code AND ip.price_list = %(price_list)s
+            LEFT JOIN `tabItem Price` ip ON i.item_code = ip.item_code AND ip.price_list = %(price_list)s where i.item_group = 'Watches'
             {conditions} 
             GROUP BY i.item_code
             LIMIT %(offset)s,20
