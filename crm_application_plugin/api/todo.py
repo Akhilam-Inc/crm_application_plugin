@@ -65,7 +65,7 @@ def todo_list(date):
         # return condition_params
         
         sql_data =  frappe.db.sql(f"""
-        SELECT date as formatted_date, description
+        SELECT date as formatted_date, description, reference_name as campaign
         FROM `tabToDo`
         WHERE date BETWEEN %(start_date_str)s AND %(end_date_str)s AND allocated_to = %(user)s {condition}      
         """,{'start_date_str':start_date,'end_date_str':end_date,'user':frappe.session.user, **condition_params},as_dict=1)
