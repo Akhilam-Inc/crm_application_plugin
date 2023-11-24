@@ -8,7 +8,7 @@ def get_home_data():
     banners = []
 
     customer_counts = frappe.db.sql("""
-        SELECT count(c.custom_client_tiers) as no_of_clients, ct.name as tier from `tabClient Tiers` ct left join `tabCustomer` c on ct.name = c.custom_client_tiers group by ct.name
+        SELECT count(c.custom_client_tiers) as no_of_clients, ct.name as tier from `tabClient Tiers` ct left join `tabCustomer` c on ct.name = c.custom_client_tiers group by ct.name order by ct.index
     """, as_dict = 1)
 
     if customer_counts:

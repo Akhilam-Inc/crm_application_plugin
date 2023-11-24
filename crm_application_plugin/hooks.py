@@ -57,7 +57,7 @@ fixtures = [
                 "Customer-custom_boutique","ToDo-custom_customer","Item-custom_product_details","Item-custom_reference","Item-custom_collection","Item-custom_dial_size","Item-custom_dial_shape",
                 "Item-custom_case_material","Item-custom_column_break_dhzcs","Item-custom_diamonds","Item-custom_strap_bracelet","Item-custom_gender","Item-custom_movement","Item-custom_water_resistance",
                 "Item-custom_brand_warranty","Campaign-custom_client_tiers","Customer-custom_sales_person","Customer-custom_client_tiers","Sales Person-custom_botique","Brand-custom_brand_logo",
-                "Sales Order Item-custom_sales_person","Sales Invoice Item-custom_sales_person","Item-custom_slider_images"
+                "Sales Order Item-custom_sales_person","Sales Invoice Item-custom_sales_person","Item-custom_slider_images","Campaign-custom_enable"
 			]
 		]
 	]},
