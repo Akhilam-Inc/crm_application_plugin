@@ -28,5 +28,7 @@ def get_home_data():
     create_response(200 , "Home Data Fetched Successfully" , {
         "banners" : banners,
         "overviews" : customer_counts
-    })    
+    }) 
+    
+
     

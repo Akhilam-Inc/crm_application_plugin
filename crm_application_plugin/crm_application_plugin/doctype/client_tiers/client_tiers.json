@@ -8,6 +8,7 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "index",
   "tier",
   "min_purchase",
   "column_break_g9lkk",
@@ -35,11 +36,16 @@
    "fieldtype": "Float",
    "in_list_view": 1,
    "label": "Max Purchase"
+  },
+  {
+   "fieldname": "index",
+   "fieldtype": "Int",
+   "label": "Index"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-10-28 12:46:02.556435",
+ "modified": "2023-11-24 16:41:05.192669",
  "modified_by": "Administrator",
  "module": "Crm Application Plugin",
  "name": "Client Tiers",

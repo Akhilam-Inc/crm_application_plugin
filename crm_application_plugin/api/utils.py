@@ -13,7 +13,7 @@ def group_data(items):
     return reduce(group_by_key , items , {})
 
 def group_by_key(acc, data):
-    key = data["formatted_date"]
+    key = data["date"]
     if key not in acc:
         acc[key] = []
         

@@ -52,7 +52,7 @@ def assign_sales_person():
     output = map_customer_to_salesperson_optimized(sales_person_sales_data)
     
     
-    for customer, sales_person in data.items():
+    for customer, sales_person in sales_person_sales_data.items():
         frappe.db.set_value("Customer",customer,"custom_sales_person",sales_person)
     
 

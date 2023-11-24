@@ -1,34 +1,7 @@
 import frappe
 from crm_application_plugin.api.utils import create_response,group_data
 from datetime import timedelta
-
-# @frappe.whitelist()
-# def todo_list(date):
-#     search = frappe.local.form_dict.search or ""
-#     offset = int(frappe.local.form_dict.offset) if frappe.local.form_dict.offset else 0
-
-#     condition = ""
-#     condition_params = {}
-#     if search:
-#         condition += "AND t.description LIKE %(search)s"
-#         condition_params['search'] = f"%{search}%"
-
-#     user = frappe.session.user
-#     todo_list = frappe.db.sql(f"""
-#         SELECT t.description
-#         FROM `tabToDo` t
-#         WHERE t.allocated_to = %(user)s AND date = %(date)s {condition}
-#         LIMIT %(offset)s, 20
-#     """, {'user': user, 'date': date, 'offset': offset, **condition_params}, as_dict=1)
-
-#     if todo_list:
-#         create_response(200, "ToDo List Fetched successfully", todo_list)
-#         return
-#     else:
-#         create_response(404, "No Records Found for ToDo list")
-#         return
-
-
+import itertools
 
 @frappe.whitelist()
 def create_todo(task_name, date):
@@ -65,17 +38,20 @@ def todo_list(date):
         # return condition_params
         
         sql_data =  frappe.db.sql(f"""
-        SELECT date as formatted_date, description, reference_name as campaign
+        SELECT date , description, reference_type, reference_name, status, custom_customer
         FROM `tabToDo`
         WHERE date BETWEEN %(start_date_str)s AND %(end_date_str)s AND allocated_to = %(user)s {condition}      
         """,{'start_date_str':start_date,'end_date_str':end_date,'user':frappe.session.user, **condition_params},as_dict=1)
         
-        # return sql_data
+        grouped_todos = {}
+        for row in sql_data:
+            date = row['date'].strftime('%Y-%m-%d')
+            if date not in grouped_todos:
+                grouped_todos[date] = []
+            grouped_todos[date].append(row)
         
-        group_todos = group_data(sql_data)
         
-        create_response(200, "ToDo List Fetched successfully", sql_data)
-            
+        create_response(200, "ToDo List Fetched successfully", grouped_todos)
     except Exception as e:
         return create_response(406, "List fetch error", frappe.get_traceback())
 

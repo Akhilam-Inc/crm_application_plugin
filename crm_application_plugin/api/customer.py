@@ -1,5 +1,6 @@
 import frappe
 from crm_application_plugin.api.utils import create_response
+import json
 
 
 @frappe.whitelist()
@@ -10,11 +11,15 @@ def get_assigned_customer_list():
 	# Get All Customers where the sales person is mentioned in sales team
 	try:
 		search = frappe.local.form_dict.search or ""
+		tier = frappe.local.form_dict.tier or ""
 		offset = int(frappe.local.form_dict.offset) if frappe.local.form_dict.offset else 0
 
 		condition = ("")
 		if search is not None and search != "":
 			condition += "and c.customer_name like %(search)s"
+
+		if tier is not None and tier != "":
+			condition += "and c.custom_client_tiers = %(custom_client_tiers)s"
 
 		user = frappe.session.user
 		employee = frappe.get_value("Employee", {"user_id": user}, "name")
@@ -27,7 +32,7 @@ def get_assigned_customer_list():
 			create_response(406, "Sales Person not found for the current user.")
 			return
 
-		campaigns = ["Diwali Campaign"]
+		
 		customer_data = frappe.db.sql("""
 			SELECT c.name, c.customer_name, c.custom_sales_person, c.mobile_no, c.email_id,c.custom_client_tiers,
 			(SELECT MAX(si.posting_date) FROM `tabSales Invoice` si WHERE si.customer = c.customer_name) AS last_purchase_date
@@ -36,11 +41,16 @@ def get_assigned_customer_list():
 		""".format(conditions = condition),{
 			"sales_person":sales_person,
 			"search" : "%"+search+"%",
-			"offset" : int(offset)
+			"offset" : int(offset),
+			"custom_client_tiers":tier
 		}, as_dict=True)
 
 		for row in customer_data:
+			campaigns = frappe.db.sql("""
+            select custom_customer,reference_name,status from `tabToDo` inner join `tabCampaign` on `tabToDo`.reference_name = `tabCampaign`.name where `tabToDo`.custom_customer = %(customer)s and `tabCampaign`.custom_enable = 1         
+            """,{'customer':row['name']},as_dict=1)
 			row['campaigns'] = campaigns
+			last_contacted_date = get_last_contacted_date(row['name'])
 
 		create_response(200, "Assigned Customer List Fetched!", customer_data)
 		return
@@ -51,43 +61,67 @@ def get_assigned_customer_list():
 
 
 @frappe.whitelist()
+def get_last_contacted_date(customer):
+	last_contacted_date = frappe.db.sql("""
+		SELECT MAX(cl.contacted_date) AS last_contacted
+		FROM (
+			SELECT message_to as customer, sent_on as contacted_date FROM `tabAetas WhatsApp Log` where message_to = %(customer)s
+			UNION ALL
+			SELECT call_to as customer, call_initiated_at as contacted_date FROM `tabAetas Call Log` where call_to = %(customer)s
+		) as cl""",{'customer':customer},as_dict=1)
+	return last_contacted_date[0]['last_contacted'] if last_contacted_date else None
+
+@frappe.whitelist()
 def get_unassigned_customer_list():
-    try:
-        search = frappe.local.form_dict.search or ""
-        offset = int(frappe.local.form_dict.offset) if frappe.local.form_dict.offset else 0
-        limit = 20
+	try:
+		search = frappe.local.form_dict.search or ""
+		offset = int(frappe.local.form_dict.offset) if frappe.local.form_dict.offset else 0
+		limit = 20
 
-        condition = ""
-        condition_params = {}
-        if search is not None and search != "":
-            condition += " AND c.name LIKE %(search)s"
-            condition_params['search'] = f"%{search}%"
+		condition = ""
+		condition_params = {}
+		if search is not None and search != "":
+			condition += " AND c.name LIKE %(search)s"
+			condition_params['search'] = f"%{search}%"
 
-        user = frappe.session.user
-        employee = frappe.db.get_value("Employee", {"user_id": user}, "name")
-        if not employee:
-            create_response(406, "Employee not found for the current user.")
-            return
+		user = frappe.session.user
+		employee = frappe.db.get_value("Employee", {"user_id": user}, "name")
+		if not employee:
+			create_response(406, "Employee not found for the current user.")
+			return
 
-        sales_person = frappe.get_value("Sales Person", {"employee": employee}, "name")
-        if not sales_person:
-            create_response(406, "Sales Person not found for the current user.")
-            return
+		sales_person = frappe.get_value("Sales Person", {"employee": employee}, "name")
+		if not sales_person:
+			create_response(406, "Sales Person not found for the current user.")
+			return
 
-        sql_query = f"""
-            SELECT c.name, c.mobile_no
-            FROM `tabCustomer` c
-            WHERE (c.custom_sales_person != %(sales_person)s OR c.custom_sales_person IS NULL) {condition}
-            LIMIT %(offset)s, %(limit)s
-        """
+		sql_query = f"""
+			SELECT c.name, c.mobile_no, c.custom_sales_person
+			FROM `tabCustomer` c
+			WHERE (c.custom_sales_person != %(sales_person)s OR c.custom_sales_person IS NULL) {condition}
+			LIMIT %(offset)s, %(limit)s
+		"""
 
-        customer_list = frappe.db.sql(sql_query, {'sales_person': sales_person, 'offset': offset, 'limit': limit, **condition_params}, as_dict=1)
+		customer_list = frappe.db.sql(sql_query, {'sales_person': sales_person, 'offset': offset, 'limit': limit, **condition_params}, as_dict=1)
 
-        create_response(200, "Unassigned Customer List Fetched!", customer_list)
-        return
-    except Exception as e:
-        create_response(409, "An error occurred while getting assigned customer list", str(e))
+		for customer in customer_list:
+			customer['last_contacted_date'] = get_last_contacted_date(customer['name'])
 
+		create_response(200, "Unassigned Customer List Fetched!", customer_list)
+		return
+	except Exception as e:
+		create_response(409, "An error occurred while getting assigned customer list", str(e))
+
+
+def get_last_contacted_date(customer):
+	last_contacted_date = frappe.db.sql("""
+		SELECT MAX(cl.contacted_date) AS last_contacted
+		FROM (
+			SELECT message_to as customer, sent_on as contacted_date FROM `tabAetas WhatsApp Log` where message_to = %(customer)s
+			UNION ALL
+			SELECT call_to as customer, call_initiated_at as contacted_date FROM `tabAetas Call Log` where call_to = %(customer)s
+		) as cl""",{'customer':customer},as_dict=1)
+	return last_contacted_date[0]['last_contacted'] if last_contacted_date else None
 
 @frappe.whitelist()
 def get_past_purchase_customer():
@@ -108,41 +142,11 @@ def get_past_purchase_customer():
 	except Exception as e:
 		create_response(406, "An error occurred while fetching customer sales data", e)	
 
-# @frappe.whitelist()
-# def get_customers():
-# 	try:
-# 		customers = frappe.db.sql("""
-# 		select customer_name,st.sales_person from`tabCustomer` c Inner Join `tabSales Team` st on c.name = st.parent""",as_dict=1)
-
-# 		customer_data = []
-
-# 		for customer in customers:
-# 			customer_address = frappe.db.sql("""
-# 			select a.phone, a.email_id from `tabAddress` a left join `tabDynamic Link` dl on dl.parent = a.name and dl.link_doctype = 'Customer' where dl.link_name = %(customer)s
-# 			""",{'customer':customer['customer_name']},as_dict = 1)
-
-# 			last_purchase_date = frappe.db.sql("""
-# 				select MAX(si.posting_date) AS last_purchase_date from `tabSales Invoice` si where si.customer = %s """, customer['customer_name'], as_dict=1)
-
-# 			customer_info = {
-# 				"customer_name": customer['customer_name'],
-# 				"number": customer_address[0]['phone'] if customer_address else None,
-# 				"email": customer_address[0]['email_id'] if customer_address else None,
-# 				"last_purchase_date": last_purchase_date[0]['last_purchase_date'] if last_purchase_date else None
-# 			}
-
-# 			customer_data.append(customer_info)
-
-# 		create_response(200, "Customer List Fetched!",customer_data)
-# 		return 
-# 	except Exception as e:
-# 		create_response(406,"getting customer data failed",e)
-# 		return
 
 
 @frappe.whitelist()
-def create_customer(customer_name,mobile_number,email_address,date_of_birth,anniversary_date,address_line1,address_line2,city,state,pincode):
-	if not customer_name or not mobile_number or not email_address or not address_line1 or not city or not state or not pincode:
+def create_customer(customer_name,mobile_number,email_address,date_of_birth,anniversary_date,address_line1,address_line2,city,state,pincode , boutique,sales_person):
+	if not customer_name or not mobile_number or not email_address or not address_line1 or not city or not state or not pincode or not boutique or not sales_person:
 		create_response(422, "Invalid request data", "Please provide all mandatory field data.")
 		return
 
@@ -154,7 +158,10 @@ def create_customer(customer_name,mobile_number,email_address,date_of_birth,anni
 			"territory": "All Territories",  
 			"customer_group":"Individual",
 			"custom_date_of_birth":date_of_birth,
-			"custom_anniversary_date":anniversary_date
+			"custom_anniversary_date":anniversary_date,
+			"boutique" : boutique,
+			"custom_sales_person":sales_person,
+	
 		})
 		customer_doc = customer_obj.insert(ignore_permissions=True)
 
@@ -210,6 +217,10 @@ def get_customer_detail(customer_name):
 		c.mobile_no,c.email_id,c.primary_address,(SELECT MAX(si.posting_date) FROM `tabSales Invoice` si WHERE si.customer = c.customer_name) AS last_purchase_date
 		from `tabCustomer` c 
 		where customer_name = %(customer)s""", {'customer': customer_name}, as_dict=1)
+  
+		active_campaigns = frappe.db.sql("""select td.name,td.reference_name,td.reference_type,td.custom_customer,td.status from `tabToDo` td inner join `tabCampaign` cp on td.reference_name = cp.name where td.custom_customer = %(customer)s and td.reference_type = 'Campaign' and cp.custom_enable = 1""",{'customer':customer_name},as_dict=1)
+  
+		customer_detail[0]['active_campaigns'] = active_campaigns
 
 		if customer_detail:
 			create_response(200, "Customer Fetched!",customer_detail[0])
@@ -221,3 +232,13 @@ def get_customer_detail(customer_name):
 		create_response(406, "Internal server error", str(e))
 		return
 
+@frappe.whitelist()
+def close_active_todo(todo_list):
+	try:
+		for todo in todo_list:
+			frappe.db.sql("""update `tabToDo` set status = 'Closed' where name = %(todo)s""",{'todo':todo})
+		create_response(200, "Todo closed successfully")
+		return
+	except Exception as e:
+		create_response(406, "Internal server error", str(e))
+		return
