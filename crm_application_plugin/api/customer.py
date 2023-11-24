@@ -12,6 +12,7 @@ def get_assigned_customer_list():
 	try:
 		search = frappe.local.form_dict.search or ""
 		tier = frappe.local.form_dict.tier or ""
+		campaign = frappe.local.form_dict.campaign or ""
 		offset = int(frappe.local.form_dict.offset) if frappe.local.form_dict.offset else 0
 
 		condition = ("")
@@ -47,10 +48,13 @@ def get_assigned_customer_list():
 
 		for row in customer_data:
 			campaigns = frappe.db.sql("""
-            select custom_customer,reference_name,status from `tabToDo` inner join `tabCampaign` on `tabToDo`.reference_name = `tabCampaign`.name where `tabToDo`.custom_customer = %(customer)s and `tabCampaign`.custom_enable = 1         
+            select custom_customer,reference_name as campaign_name,status from `tabToDo` inner join `tabCampaign` on `tabToDo`.reference_name = `tabCampaign`.name where `tabToDo`.custom_customer = %(customer)s and `tabCampaign`.custom_enable = 1         
             """,{'customer':row['name']},as_dict=1)
 			row['campaigns'] = campaigns
-			last_contacted_date = get_last_contacted_date(row['name'])
+			row['last_contacted_date'] = get_last_contacted_date(row['name'])
+   
+		if campaign:
+			customer_data = list(filter(lambda x: any(camp['campaign_name'] == campaign for camp in x['campaigns']), customer_data))
 
 		create_response(200, "Assigned Customer List Fetched!", customer_data)
 		return
