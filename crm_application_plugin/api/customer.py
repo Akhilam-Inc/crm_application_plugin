@@ -250,7 +250,7 @@ def close_active_todo(todo_list):
 @frappe.whitelist()
 def sales_person_list():
 	try:
-		sales_person_list = frappe.db.sql("""select name from `tabSales Person` where name not in ('Sales Team')""",as_dict=1)
+		sales_person_list = frappe.db.sql("""select sp.name,sp.custom_botique,ep.cell_number,ep.prefered_email from `tabSales Person` sp left join `tabEmployee` ep on sp.employee = ep.name where sp.name not in ('Sales Team')""",as_dict=1)
 		create_response(200,"Sales Person List Fetched!",sales_person_list)
 	except Exception as e:
 		create_response(406,"Internal server error",str(e))
