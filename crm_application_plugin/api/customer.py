@@ -222,7 +222,7 @@ def get_customer_detail(customer_name):
 		from `tabCustomer` c 
 		where customer_name = %(customer)s""", {'customer': customer_name}, as_dict=1)
   
-		active_campaigns = frappe.db.sql("""select td.name,td.reference_name,td.reference_type,td.custom_customer,td.status from `tabToDo` td inner join `tabCampaign` cp on td.reference_name = cp.name where td.custom_customer = %(customer)s and td.reference_type = 'Campaign' and cp.custom_enable = 1""",{'customer':customer_name},as_dict=1)
+		active_campaigns = frappe.db.sql("""select td.name,td.reference_name,td.reference_type,td.custom_customer,td.status,cp.custom_start_date,custom_end_date from `tabToDo` td inner join `tabCampaign` cp on td.reference_name = cp.name where td.custom_customer = %(customer)s and td.reference_type = 'Campaign' and cp.custom_enable = 1 and td.status = 'Open' """,{'customer':customer_name},as_dict=1)
   
 		customer_detail[0]['active_campaigns'] = active_campaigns
 
@@ -246,3 +246,11 @@ def close_active_todo(todo_list):
 	except Exception as e:
 		create_response(406, "Internal server error", str(e))
 		return
+
+@frappe.whitelist()
+def sales_person_list():
+	try:
+		sales_person_list = frappe.db.sql("""select name from `tabSales Person` where name not in ('Sales Team')""",as_dict=1)
+		create_response(200,"Sales Person List Fetched!",sales_person_list)
+	except Exception as e:
+		create_response(406,"Internal server error",str(e))
