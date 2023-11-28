@@ -1,0 +1,31 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2023-11-27 13:29:25.590780",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "slider_image"
+ ],
+ "fields": [
+  {
+   "fieldname": "slider_image",
+   "fieldtype": "Attach",
+   "in_list_view": 1,
+   "label": "Slider Image"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2023-11-27 13:30:17.524971",
+ "modified_by": "Administrator",
+ "module": "Crm Application Plugin",
+ "name": "Home page banner mobile",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

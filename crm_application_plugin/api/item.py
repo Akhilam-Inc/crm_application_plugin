@@ -28,6 +28,8 @@ def get_product_list():
         if not warehouse_name:
             create_response(406, "Warehouse Not Define In Boutique Document!")
             return
+        
+        reserverd_warehouse = frappe.db.get_value("Warehouse",warehouse_name,'custom_reserved_warehouse')
 
         price_list = frappe.db.get_value("Aetas CRM Configuration",None,'default_price_list')
         if not price_list:
@@ -35,7 +37,11 @@ def get_product_list():
             return
 
         item_details = frappe.db.sql("""
-            SELECT i.item_code, i.item_name, IFNULL(i.image,'') as image, IFNULL(ip.price_list_rate, 0) as price,(select IFNULL(actual_qty,0) from `tabBin` where item_code = i.item_code and warehouse = %(warehouse)s) as my_boutique,(select IFNULL(sum(actual_qty),0) from `tabBin` where item_code = i.item_code and warehouse != %(warehouse)s group by item_code) as other_boutique
+            SELECT i.item_code, i.item_name, IFNULL(i.image,'') as image, IFNULL(ip.price_list_rate, 0) as price,
+            (select IFNULL(actual_qty,0) from `tabBin` where item_code = i.item_code and warehouse = %(warehouse)s) as my_boutique,
+            (select IFNULL(sum(actual_qty),0) from `tabBin` where item_code = i.item_code and warehouse != %(warehouse)s group by item_code) as other_boutique,
+            (select IFNULL(actual_qty,0) from `tabBin` where item_code = i.item_code and warehouse = %(reserved_warehouse)s) as my_reserved
+            
             FROM `tabItem` i
             LEFT JOIN `tabItem Price` ip ON i.item_code = ip.item_code AND ip.price_list = %(price_list)s where i.item_group = 'Watches'
             {conditions} 
@@ -45,7 +51,8 @@ def get_product_list():
                 "search" : "%"+search+"%",
                 "offset" : int(offset),
                 "price_list":price_list,
-                "warehouse":warehouse_name
+                "warehouse":warehouse_name,
+                "reserved_warehouse":reserverd_warehouse
         },as_dict=1)
 
         create_response(200, "Item data Fetched Successfully!", item_details)
@@ -173,7 +180,7 @@ def stock_list_other_botique(item):
                 SELECT i.item_code, i.item_name, IFNULL(i.image,'') as image,bn.actual_qty,bn.warehouse
                 FROM `tabItem` i
                 LEFT JOIN `tabBin` bn ON i.item_code = bn.item_code 
-                Where bn.warehouse != %(warehouse)s and i.item_code = %(item_code)s
+                Where bn.warehouse != %(warehouse)s and i.item_code = %(item_code)s and bn.custom_is_reserved = 0
                 
                 """,{
                     "warehouse":warehouse_name,
@@ -186,4 +193,9 @@ def stock_list_other_botique(item):
     except Exception as e:
         create_response(406, "Something went Wrong!", frappe.get_traceback())
         return
+    
+
+        
+        
+    
         

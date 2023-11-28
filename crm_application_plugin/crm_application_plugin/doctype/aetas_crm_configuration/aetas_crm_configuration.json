@@ -8,7 +8,8 @@
  "engine": "InnoDB",
  "field_order": [
   "set_client_tiers_based_on_days",
-  "default_price_list"
+  "default_price_list",
+  "banner_image"
  ],
  "fields": [
   {
@@ -21,12 +22,18 @@
    "fieldtype": "Link",
    "label": "Default Price List",
    "options": "Price List"
+  },
+  {
+   "fieldname": "banner_image",
+   "fieldtype": "Table",
+   "label": "Banner Image",
+   "options": "Home page banner mobile"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-11-06 12:55:51.390998",
+ "modified": "2023-11-27 13:29:49.133463",
  "modified_by": "Administrator",
  "module": "Crm Application Plugin",
  "name": "Aetas CRM Configuration",
