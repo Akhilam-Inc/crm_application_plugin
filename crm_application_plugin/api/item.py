@@ -1,6 +1,13 @@
 import frappe
 from crm_application_plugin.api.utils import create_response
 from functools import reduce
+from shopify.resources import Product, Variant
+import frappe
+from crm_application_plugin.api.utils import create_response
+from functools import reduce
+from shopify.resources import Product, Variant
+import requests
+from requests.exceptions import RequestException
 
 
 @frappe.whitelist()
@@ -109,6 +116,49 @@ def get_product_detail(item_code):
     except Exception as e:
         create_response(500,"An error occurred while getting data of item",e)
         return   
+
+
+
+
+@frappe.whitelist()
+def get_product_details_from_shopify(item):
+    # Get product details from Shopify using Shopify SDK
+    try:
+        shopify_settings = frappe.get_single("Shopify Setting")
+        secret = shopify_settings.get_password("password")
+        url = "https://"+shopify_settings.shopify_url+"/admin/api/2023-07/products/{product_id}.json".format(product_id=item)
+        headers = {
+            "X-Shopify-Access-Token":secret
+        }
+        res= get_request(url, headers)
+        
+        print(res)
+        
+        
+        
+        create_response(200, "Product details fetched successfully!", res)
+        return 
+    except Exception as e:
+        create_response(500, "An error occurred while getting product details from Shopify", e)
+        return
+
+
+def get_request(url, headers):
+    try:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+
+    except RequestException as err:
+        frappe.log_error(title="Shoppify Product get call",message=err)
+        return None
+
+    except Exception as err:
+        frappe.log_error(title="Shoppify Product get call",message=err)
+        return None
+
+    return response.json()
+    
+    
 
 @frappe.whitelist()
 def brand_list():
