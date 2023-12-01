@@ -187,7 +187,7 @@ def create_customer(customer_name,mobile_number,email_address,date_of_birth,anni
 			}]
 		})
 		
-		contact_doc.insert(ignore_permissions=True)
+		contact_document = contact_doc.insert(ignore_permissions=True)
 
 		address_doc = frappe.get_doc({
 			'doctype':'Address',
@@ -203,7 +203,11 @@ def create_customer(customer_name,mobile_number,email_address,date_of_birth,anni
 
 			}]
 		})
-		address_doc.insert(ignore_permissions = True)
+		add_doc = address_doc.insert(ignore_permissions = True)
+		customer_doc.customer_primary_address = add_doc.name
+		customer_doc.customer_primary_contact = contact_document.name
+		customer_doc.save(ignore_permissions=True)
+  	
 		create_response(200,"customer created successfully")
 		return
 				
