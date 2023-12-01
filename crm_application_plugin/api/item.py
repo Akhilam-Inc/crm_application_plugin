@@ -230,7 +230,8 @@ def stock_list_other_botique(item):
                 SELECT i.item_code, i.item_name, IFNULL(i.image,'') as image,bn.actual_qty,bn.warehouse
                 FROM `tabItem` i
                 LEFT JOIN `tabBin` bn ON i.item_code = bn.item_code 
-                Where bn.warehouse != %(warehouse)s and i.item_code = %(item_code)s and bn.custom_is_reserved = 0
+                inner join `tabWarehouse` wh on wh.name = bn.warehouse
+                Where bn.warehouse != %(warehouse)s and i.item_code = %(item_code)s and wh.custom_is_reserved = 0
                 
                 """,{
                     "warehouse":warehouse_name,
