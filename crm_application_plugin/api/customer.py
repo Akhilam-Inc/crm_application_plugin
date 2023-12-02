@@ -149,11 +149,13 @@ def get_past_purchase_customer():
 
 
 @frappe.whitelist()
-def create_customer(customer_name,mobile_number,email_address,date_of_birth,anniversary_date,address_line1,address_line2,city,state,pincode , boutique,sales_person):
-	if not customer_name or not mobile_number or not email_address or not address_line1 or not city or not state or not pincode or not boutique or not sales_person:
+def create_customer(customer_name,mobile_number,email_address,date_of_birth,anniversary_date,address_line1,address_line2,city,state,pincode,country,boutique,sales_person):
+	if not customer_name or not mobile_number or not email_address or not address_line1 or not city or not state or not boutique or not sales_person or not country:
 		create_response(422, "Invalid request data", "Please provide all mandatory field data.")
 		return
-
+	if not frappe.db.exists("Country",country):
+		create_response(406,"Invalid Country data")
+		return
 	try:
 		customer_obj = frappe.get_doc({
 			"doctype": "Customer",
@@ -168,6 +170,7 @@ def create_customer(customer_name,mobile_number,email_address,date_of_birth,anni
 	
 		})
 		customer_doc = customer_obj.insert(ignore_permissions=True)
+		customer_created = True
 
 		contact_doc = frappe.get_doc({
 			'doctype':'Contact',
@@ -186,8 +189,8 @@ def create_customer(customer_name,mobile_number,email_address,date_of_birth,anni
 
 			}]
 		})
-		
 		contact_document = contact_doc.insert(ignore_permissions=True)
+		contact_created = True
 
 		address_doc = frappe.get_doc({
 			'doctype':'Address',
@@ -197,13 +200,16 @@ def create_customer(customer_name,mobile_number,email_address,date_of_birth,anni
 			'city':city,
 			'state':state,
 			'pincode':pincode,
+			'country':country,
 			'links':[{
 				'link_doctype':'Customer',
 				'link_name':customer_doc.name
 
 			}]
 		})
+		
 		add_doc = address_doc.insert(ignore_permissions = True)
+		address_created = True
 		customer_doc.customer_primary_address = add_doc.name
 		customer_doc.customer_primary_contact = contact_document.name
 		customer_doc.save(ignore_permissions=True)
@@ -212,7 +218,9 @@ def create_customer(customer_name,mobile_number,email_address,date_of_birth,anni
 		return
 				
 	except Exception as e:
+		frappe.log_error("Customer Creation from Mobile",frappe.get_traceback())
 		create_response(406,"customer creation failed",e)
+		
 		return
 
 

@@ -9,6 +9,7 @@
  "field_order": [
   "set_client_tiers_based_on_days",
   "default_price_list",
+  "duration",
   "banner_image"
  ],
  "fields": [
@@ -28,12 +29,17 @@
    "fieldtype": "Table",
    "label": "Banner Image",
    "options": "Home page banner mobile"
+  },
+  {
+   "fieldname": "duration",
+   "fieldtype": "Int",
+   "label": "Duration"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-11-27 13:29:49.133463",
+ "modified": "2023-12-02 11:11:16.174603",
  "modified_by": "Administrator",
  "module": "Crm Application Plugin",
  "name": "Aetas CRM Configuration",

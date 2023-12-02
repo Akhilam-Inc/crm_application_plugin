@@ -13,8 +13,11 @@ def get_home_data():
     
 
     customer_counts = frappe.db.sql("""
-        SELECT count(c.custom_client_tiers) as no_of_clients, ct.name as tier from `tabClient Tiers` ct left join `tabCustomer` c on ct.name = c.custom_client_tiers group by ct.name order by ct.index
-    """, as_dict = 1)
+        SELECT count(c.custom_client_tiers) as no_of_clients, ct.name as tier from `tabClient Tiers` ct left join `tabCustomer` c on ct.name = c.custom_client_tiers where c.custom_sales_person in %(sales_person)s group by ct.name
+    """,
+    {
+        "sales_person" : get_sales_person_herarchy(frappe.session.user)
+    },as_dict=1)
 
     if customer_counts:
         total = reduce(lambda acc,x : acc + x["no_of_clients"] , customer_counts, 0)
@@ -32,8 +35,30 @@ def get_home_data():
      
     create_response(200 , "Home Data Fetched Successfully" , {
         "banners" : banners,
-        "overviews" : customer_counts
+        "overviews" : customer_counts,
+        "banner_duration":frappe.db.get_single_value("Aetas CRM Configuration","duration")
     }) 
+    
+def get_sales_person_herarchy(user):
+    employee = frappe.db.get_value("Employee",{"user_id":user},"name")
+    if not employee:
+        create_response(406,"Employee not found")
+        return
+    sales_person = frappe.db.get_value("Sales Person",{"employee":employee},"name")
+    if not sales_person:
+        create_response(406,"Sales Person not found")
+        return
+    
+    sales_person_is_group = frappe.db.get_value("Sales Person",sales_person,"is_group")
+    sales_person_list = []
+    if sales_person_is_group:
+        sales_persons = frappe.db.get_all("Sales Person",{"parent_sales_person":sales_person},["name"],pluck="name")
+        sales_person_list = sales_persons
+    
+    sales_person_list.append(sales_person)
+        
+    return sales_person_list
+    
     
 
     
