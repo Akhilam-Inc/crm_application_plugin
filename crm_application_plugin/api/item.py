@@ -76,43 +76,38 @@ def get_product_list():
 def get_product_detail(item_code):
     # Get details of product baesd on parameter
     try:
+        product_details = get_product_details_from_shopify(item_code)
+        if not product_details:
+            create_response(406, "Product Not Found!")
+            return
+        product_meta = get_product_details_from_shopify(item_code,1)
+        if not product_meta:
+            create_response(406, "Product Meta Not Found!")
+            return
         
-        item_details = frappe.db.sql("""
-        select i.item_name,i.description,i.custom_reference,i.custom_collection,i.custom_dial_size,i.custom_dial_shape,i.custom_case_material,
-        i.custom_diamonds,i.custom_strap_bracelet,i.custom_gender,i.custom_movement,i.custom_water_resistance,i.custom_brand_warranty, i.brand,
-        IFNULL(i.image,'') as file_url, (SELECT b.custom_brand_logo FROM `tabBrand` b WHERE b.name = i.brand) AS brand_logo
-        from`tabItem` i where i.name = %(item_code)s
-        """,{'item_code':item_code},as_dict=1)
-
-        item_price = frappe.db.get_value("Item Price",{'item_code':item_code},'price_list_rate')
-        # url = frappe.utils.get_url()
-        slider_images = frappe.db.sql("""
-            select slider_image from `tabItem Image` where parent = %(item_code)s                              
-        """ , {
-            "item_code" : item_code
-        }, as_dict = 1)
-        if item_details:
-            item_info = {
-                'item_name':item_details[0]["item_name"] or '',
-                'description':item_details[0]["description"] or '',
-                'reference': item_details[0]["custom_reference"] or '',
-                'collection': item_details[0]["custom_collection"] or '',
-                'dial_size': item_details[0]["custom_dial_size"] or '',
-                'dial_shape': item_details[0]["custom_dial_shape"] or '',
-                'case_material': item_details[0]["custom_case_material"] or '',
-                'diamonds': item_details[0]["custom_diamonds"] or '',
-                'strap_bracelet': item_details[0]["custom_strap_bracelet"] or '',
-                'gender': item_details[0]["custom_gender"] or '',
-                'movement': item_details[0]["custom_movement"] or '',
-                'water_resistance': item_details[0]["custom_water_resistance"] or '',
-                'brand_warranty': item_details[0]["custom_brand_warranty"] or '',
-                'brand_logo': item_details[0]["brand_logo"] or '',
-                'brand': item_details[0]["brand"] or '',
-                'price': item_price or 0.0,
-                'images': [slider_image["slider_image"] for slider_image in slider_images if slider_image]
-                # 'image_info': [{'image_url': url + image['file_url']} for image in item_details if image.get('file_url')]
-            }
-           
+        
+        
+        item_info = {
+            'item_name':product_details["product"]["title"],
+            'description':product_details["product"]["body_html"],
+            'reference': product_meta["metafields"][7]["value"] if product_meta["metafields"] else '',
+            'collection': product_meta["metafields"][9]["value"] if product_meta["metafields"] else '',
+            'dial_size': '',
+            'dial_shape': product_meta["metafields"][3]["value"] if product_meta["metafields"] else '',
+            'case_material': product_meta["metafields"][0]["value"] if product_meta["metafields"] else '',
+            'diamonds': product_meta["metafields"][2]["value"] if product_meta["metafields"] else '',
+            'strap_bracelet': product_meta["metafields"][11]["value"] if product_meta["metafields"] else '',
+            'gender': product_meta["metafields"][5]["value"] if product_meta["metafields"] else '',
+            'movement': product_meta["metafields"][12]["value"] if product_meta["metafields"] else '',
+            'water_resistance': product_meta["metafields"][10]["value"] if product_meta["metafields"] else '',
+            'brand_warranty': '',
+            'brand_logo': '',
+            'brand': product_meta["metafields"][1]["value"] if product_meta["metafields"] else '',
+            'price': product_details["product"]["variants"][0]["price"],
+            'images': [{'image_url': image['src']} for image in product_details["product"]["images"]],
+            # 'image_info': [{'image_url': url + image['file_url']} for image in item_details if image.get('file_url')]
+        }
+        print(item_info)
 
         create_response(200, "Item data Fetched Successfully!", item_info if item_details else {})
         return 
@@ -122,28 +117,26 @@ def get_product_detail(item_code):
 
 
 
-
-@frappe.whitelist()
-def get_product_details_from_shopify(item):
-    # Get product details from Shopify using Shopify SDK
+def get_product_details_from_shopify(item,meta=0):
     try:
         shopify_settings = frappe.get_single("Shopify Setting")
         secret = shopify_settings.get_password("password")
-        url = "https://"+shopify_settings.shopify_url+"/admin/api/2023-07/products/{product_id}.json".format(product_id=item)
+        if not meta:
+            url = "https://"+shopify_settings.shopify_url+"/admin/api/2023-07/products/{product_id}.json".format(product_id=item)
+        else:
+            url = "https://"+shopify_settings.shopify_url+"/admin/api/2023-10/products/{product_id}/metafields.json".format(product_id=item)
         headers = {
             "X-Shopify-Access-Token":secret
         }
         res= get_request(url, headers)
-        
-        print(res)
-        
-        
-        
-        create_response(200, "Product details fetched successfully!", res)
-        return 
+        return res
     except Exception as e:
-        create_response(500, "An error occurred while getting product details from Shopify", e)
-        return
+        if not meta:
+            frappe.log_error(title="Shoppify Product get call",message=e)
+        else:
+            frappe.log_error(title="Shoppify Product metafield get call",message=e)
+        return None
+    
 
 
 def get_request(url, headers):
