@@ -75,12 +75,16 @@ def get_product_list():
 @frappe.whitelist()
 def get_product_detail(item_code):
     # Get details of product baesd on parameter
+    ecommerce_item_code = frappe.db.get_value("Ecommerce Item", {"erpnext_item_code": item_code}, "integration_item_code")
+    if not ecommerce_item_code:
+        create_response(406, "Ecommerce Item Not Found!")
+        return
     try:
-        product_details = get_product_details_from_shopify(item_code)
+        product_details = get_product_details_from_shopify(ecommerce_item_code)
         if not product_details:
             create_response(406, "Product Not Found!")
             return
-        product_meta = get_product_details_from_shopify(item_code,1)
+        product_meta = get_product_details_from_shopify(ecommerce_item_code,1)
         if not product_meta:
             create_response(406, "Product Meta Not Found!")
             return
@@ -107,9 +111,8 @@ def get_product_detail(item_code):
             'images': [{'image_url': image['src']} for image in product_details["product"]["images"]],
             # 'image_info': [{'image_url': url + image['file_url']} for image in item_details if image.get('file_url')]
         }
-        print(item_info)
 
-        create_response(200, "Item data Fetched Successfully!", item_info if item_details else {})
+        create_response(200, "Item data Fetched Successfully!",item_info)
         return 
     except Exception as e:
         create_response(500,"An error occurred while getting data of item",e)
