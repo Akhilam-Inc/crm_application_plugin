@@ -74,7 +74,7 @@ def get_product_list():
 
 @frappe.whitelist()
 def get_product_detail(item_code):
-    # Get details of product baesd on parameter
+    # Get details of product based on parameter
     ecommerce_item_code = frappe.db.get_value("Ecommerce Item", {"erpnext_item_code": item_code}, "integration_item_code")
     if not ecommerce_item_code:
         create_response(406, "Ecommerce Item Not Found!")
@@ -84,39 +84,43 @@ def get_product_detail(item_code):
         if not product_details:
             create_response(406, "Product Not Found!")
             return
-        product_meta = get_product_details_from_shopify(ecommerce_item_code,1)
+        product_meta = get_product_details_from_shopify(ecommerce_item_code, 1)
         if not product_meta:
             create_response(406, "Product Meta Not Found!")
             return
-        
-        
-        
+
         item_info = {
-            'item_name':product_details["product"]["title"],
-            'description':product_details["product"]["body_html"],
-            'reference': product_meta["metafields"][7]["value"] if product_meta["metafields"] else '',
-            'collection': product_meta["metafields"][9]["value"] if product_meta["metafields"] else '',
-            'dial_size': '',
-            'dial_shape': product_meta["metafields"][3]["value"] if product_meta["metafields"] else '',
-            'case_material': product_meta["metafields"][0]["value"] if product_meta["metafields"] else '',
-            'diamonds': product_meta["metafields"][2]["value"] if product_meta["metafields"] else '',
-            'strap_bracelet': product_meta["metafields"][11]["value"] if product_meta["metafields"] else '',
-            'gender': product_meta["metafields"][5]["value"] if product_meta["metafields"] else '',
-            'movement': product_meta["metafields"][12]["value"] if product_meta["metafields"] else '',
-            'water_resistance': product_meta["metafields"][10]["value"] if product_meta["metafields"] else '',
-            'brand_warranty': '',
+            'item_name': product_details["product"]["title"],
+            'description': product_details["product"]["body_html"],
+            'reference': get_metafield_value(product_meta, "reference"),
+            'collection': get_metafield_value(product_meta, "collection"),
+            'dial_size': get_metafield_value(product_meta, "dial_size"),
+            'dial_shape': get_metafield_value(product_meta, "dial_shape"),
+            'case_material': get_metafield_value(product_meta, "case_material"),
+            'diamonds': get_metafield_value(product_meta, "diamonds"),
+            'strap_bracelet': get_metafield_value(product_meta, "strap_bracelet"),
+            'gender': get_metafield_value(product_meta, "gender"),
+            'movement': get_metafield_value(product_meta, "movement"),
+            'water_resistance': get_metafield_value(product_meta, "water_resistance"),
+            'brand_warranty': get_metafield_value(product_meta, "warranty"),
             'brand_logo': '',
-            'brand': product_meta["metafields"][1]["value"] if product_meta["metafields"] else '',
+            'brand': get_metafield_value(product_meta, "brand"),
             'price': product_details["product"]["variants"][0]["price"],
             'images': [{'image_url': image['src']} for image in product_details["product"]["images"]],
-            # 'image_info': [{'image_url': url + image['file_url']} for image in item_details if image.get('file_url')]
         }
 
-        create_response(200, "Item data Fetched Successfully!",item_info)
+        create_response(200, "Item data Fetched Successfully!", item_info)
         return 
     except Exception as e:
-        create_response(500,"An error occurred while getting data of item",e)
+        create_response(500, "An error occurred while getting data of item", e)
         return   
+
+def get_metafield_value(product_meta, key):
+    for metafield in product_meta["metafields"]:
+        if metafield["key"] == key:
+            return metafield["value"]
+    return ''
+
 
 
 
