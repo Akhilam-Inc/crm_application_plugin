@@ -107,6 +107,7 @@ def get_product_detail(item_code):
             'brand': get_metafield_value(product_meta, "brand"),
              'price' : float(product_details["product"]["variants"][0]["price"]),
             'images': [{'image_url': image['src']} for image in product_details["product"]["images"]],
+            'share_url': "https://artoftimeindia.com/products"+product_details["product"]["handle"],
         }
 
         create_response(200, "Item data Fetched Successfully!", item_info)
