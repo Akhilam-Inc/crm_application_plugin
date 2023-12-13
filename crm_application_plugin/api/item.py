@@ -105,7 +105,7 @@ def get_product_detail(item_code):
             'brand_warranty': get_metafield_value(product_meta, "warranty"),
             'brand_logo': '',
             'brand': get_metafield_value(product_meta, "brand"),
-            'price': product_details["product"]["variants"][0]["price"],
+             'price' : float(product_details["product"]["variants"][0]["price"]),
             'images': [{'image_url': image['src']} for image in product_details["product"]["images"]],
         }
 
