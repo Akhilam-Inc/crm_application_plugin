@@ -1,6 +1,7 @@
 import frappe
 from crm_application_plugin.api.utils import create_response
 import json
+from frappe.contacts.doctype.address.address import get_address_display
 
 
 @frappe.whitelist()
@@ -230,9 +231,11 @@ def get_customer_detail(customer_name):
 	try:
 		customer_detail = frappe.db.sql("""
 		select c.customer_name,c.custom_date_of_birth,c.custom_anniversary_date,c.custom_sales_person,c.custom_client_tiers,
-		c.mobile_no,c.email_id,c.primary_address,(SELECT MAX(si.posting_date) FROM `tabSales Invoice` si WHERE si.customer = c.customer_name) AS last_purchase_date
+		c.mobile_no,c.email_id,c.customer_primary_address,(SELECT MAX(si.posting_date) FROM `tabSales Invoice` si WHERE si.customer = c.customer_name) AS last_purchase_date
 		from `tabCustomer` c 
 		where name = %(customer)s""", {'customer': customer_name}, as_dict=1)
+
+		customer_detail[0]['primary_address'] = get_address_display(customer_detail[0]['customer_primary_address'])
   
 		active_campaigns = frappe.db.sql("""select td.name,td.reference_name,td.reference_type,td.custom_customer,td.status,cp.custom_start_date,custom_end_date from `tabToDo` td inner join `tabCampaign` cp on td.reference_name = cp.name where td.custom_customer = %(customer)s and td.reference_type = 'Campaign' and cp.custom_enable = 1 and td.status = 'Open' """,{'customer':customer_name},as_dict=1)
   
