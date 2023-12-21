@@ -5,25 +5,26 @@ def assign_customer_tier():
     customer_list = frappe.db.sql("""
     select name from `tabCustomer`
     """,as_dict=1)    
-
-    for customer in customer_list:
-        sales_of_customer = get_customer(customer['name'])
-        tier = get_applicable_slab(sales_of_customer)
-        print(tier)
-        frappe.db.set_value("Customer",customer['name'],"custom_client_tiers",tier)
-        frappe.db.commit()
+    try:
+        for customer in customer_list:
+            sales_of_customer = get_customer(customer['name'])
+            tier = get_applicable_slab(sales_of_customer)
+            frappe.db.set_value("Customer",customer['name'],"custom_client_tiers",tier)
+            frappe.db.commit()
+    except Exception as e:
+        frappe.log_error(message=e, title="Assign Tier Error")
+        
 
 
 def get_customer(customer):
     sales_date = add_to_date(frappe.utils.today(), years=-2)
-    print(sales_date)
     sales_details = frappe.db.sql("""
     select customer,sum(grand_total) as net_sales from `tabSales Invoice` where docstatus = 1 and customer = %(customer)s and posting_date > %(last_sales_date)s group by customer
     """,({
         "customer":customer,
         "last_sales_date":sales_date
     }),as_dict=1)
-    print(sales_details)
+    
     return sales_details[0]['net_sales'] if sales_details else 0
 
 def get_applicable_slab(sales):
@@ -42,17 +43,17 @@ def get_applicable_slab(sales):
 def assign_sales_person():
     sales_person_sales_data = frappe.db.sql("""
     select 
-    si.customer,si.posting_date,sum(sii.amount) as total,sii.custom_sales_person 
+    si.customer,si.posting_date,sum(sii.amount) as total,sii.sales_person 
     from `tabSales Invoice` si inner join `tabSales Invoice Item` sii on si.name = sii.parent 
-    where sii.custom_sales_person is not null and si.docstatus = 1 
-    group by si.customer,sii.custom_sales_person 
+    where sii.sales_person is not null and si.docstatus = 1 
+    group by si.customer,sii.sales_person 
     order by si.posting_date desc
     """,as_dict = 1)
 
     output = map_customer_to_salesperson_optimized(sales_person_sales_data)
     
     
-    for customer, sales_person in sales_person_sales_data.items():
+    for customer, sales_person in output.items():
         frappe.db.set_value("Customer",customer,"custom_sales_person",sales_person)
     
 
@@ -62,7 +63,7 @@ def map_customer_to_salesperson_optimized(sales_data):
 
     for record in sales_data:
         customer = record['customer']
-        sales_info = (record['total'], record['posting_date'], record['custom_sales_person'])
+        sales_info = (record['total'], record['posting_date'], record['sales_person'])
 
         # Update the record if it's either the first one, or a better one
         if customer not in customer_sales_map or sales_info > customer_sales_map[customer]:
