@@ -2,6 +2,7 @@ import frappe
 from crm_application_plugin.api.utils import create_response
 import json
 from frappe.contacts.doctype.address.address import get_address_display
+from crm_application_plugin.api.home import get_sales_person_herarchy
 
 
 @frappe.whitelist()
@@ -39,9 +40,9 @@ def get_assigned_customer_list():
 			SELECT c.name, c.customer_name, c.custom_sales_person, c.mobile_no, c.email_id,c.custom_client_tiers,
 			(SELECT MAX(si.posting_date) FROM `tabSales Invoice` si WHERE si.customer = c.customer_name) AS last_purchase_date
 			FROM `tabCustomer` c
-			WHERE c.custom_sales_person = %(sales_person)s {conditions} LIMIT %(offset)s,20
+			WHERE c.custom_sales_person in %(sales_person)s {conditions} LIMIT %(offset)s,20
 		""".format(conditions = condition),{
-			"sales_person":sales_person,
+			"sales_person":get_sales_person_herarchy(user),
 			"search" : "%"+search+"%",
 			"offset" : int(offset),
 			"custom_client_tiers":tier
