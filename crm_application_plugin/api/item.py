@@ -52,7 +52,7 @@ def get_product_list():
             (select IFNULL(sum(actual_qty),0) from `tabBin` where item_code = i.item_code and warehouse not in %(exception_warehouse)s) as other_boutique,
             i.product_handle as share_link
             FROM `tabItem` i
-            LEFT JOIN `tabItem Price` ip ON i.item_code = ip.item_code AND ip.price_list = %(price_list)s where i.item_group = 'Watches'
+            LEFT JOIN `tabItem Price` ip ON i.item_code = ip.item_code AND ip.price_list = %(price_list)s where i.item_group = 'Watch' and i.product_handle is not null
             {conditions} 
             GROUP BY i.item_code
             LIMIT %(offset)s,20
