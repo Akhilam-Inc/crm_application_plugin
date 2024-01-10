@@ -11,12 +11,13 @@ def get_home_data():
     select Concat('{site_url}',slider_image) as file_url from `tabHome page banner mobile`order by idx                       
     """.format(site_url = site_url),as_dict=1)
     
-
+    public_tier = frappe.db.get_all("Client Tiers",filters={"is_public":1},pluck="name")
     customer_counts = frappe.db.sql("""
-        SELECT count(c.custom_client_tiers) as no_of_clients, ct.name as tier from `tabClient Tiers` ct left join `tabCustomer` c on ct.name = c.custom_client_tiers where c.custom_sales_person in %(sales_person)s group by ct.name
+        SELECT count(c.custom_client_tiers) as no_of_clients, ct.name as tier from `tabClient Tiers` ct left join `tabCustomer` c on ct.name = c.custom_client_tiers where (c.custom_sales_person in %(sales_person)s or c.custom_client_tiers in %(public_tiers)s)  group by ct.name
     """,
     {
-        "sales_person" : get_sales_person_herarchy(frappe.session.user)
+        "sales_person" : get_sales_person_herarchy(frappe.session.user),
+        "public_tiers":public_tier
     },as_dict=1)
 
     if customer_counts:
