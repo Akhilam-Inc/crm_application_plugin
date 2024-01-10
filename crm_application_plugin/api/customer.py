@@ -37,7 +37,7 @@ def get_assigned_customer_list():
 
 		public_tiers = frappe.db.get_all("Client Tiers",filters={"is_public":1},pluck="name")
 
-		if tier is not in public_tiers:
+		if tier not in public_tiers:
 
 			customer_data = frappe.db.sql("""
 				SELECT c.name, c.customer_name, c.custom_sales_person, c.mobile_no, c.email_id,c.custom_client_tiers,
