@@ -35,18 +35,17 @@ def get_assigned_customer_list():
 			create_response(406, "Sales Person not found for the current user.")
 			return
 
-		public_tier = frappe.db.get_all("Client Tiers",filters={"is_public":1},pluck="name")
+		
 		customer_data = frappe.db.sql("""
 			SELECT c.name, c.customer_name, c.custom_sales_person, c.mobile_no, c.email_id,c.custom_client_tiers,
 			(SELECT MAX(si.posting_date) FROM `tabSales Invoice` si WHERE si.customer = c.customer_name) AS last_purchase_date
 			FROM `tabCustomer` c
-			WHERE (c.custom_sales_person in %(sales_person)s {conditions} or c.custom_client_tiers in %(public_tiers)s) LIMIT %(offset)s,20
+			WHERE c.custom_sales_person in %(sales_person)s {conditions}  LIMIT %(offset)s,20
 		""".format(conditions = condition),{
 			"sales_person":get_sales_person_herarchy(user),
 			"search" : "%"+search+"%",
 			"offset" : int(offset),
-			"custom_client_tiers":tier,
-			"public_tiers":public_tier
+			"custom_client_tiers":tier
 		}, as_dict=True)
 
 		for row in customer_data:
