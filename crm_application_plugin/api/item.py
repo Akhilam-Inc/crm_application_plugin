@@ -40,26 +40,21 @@ def get_product_list():
         
         exception_warehouse = [warehouse_name,reserverd_warehouse]
 
-        price_list = frappe.db.get_value("Aetas CRM Configuration",None,'default_price_list')
-        if not price_list:
-            create_response(406, "Default price list is not defined in the settings!")
-            return
 
         item_details = frappe.db.sql("""
-            SELECT i.item_code, i.item_name, IFNULL(i.image,'') as image, IFNULL(ip.price_list_rate, 0) as price,
+            SELECT i.item_code, i.item_name, IFNULL(i.image,'') as image, i.shopify_selling_rate as price,
             (select IFNULL(actual_qty,0) from `tabBin` where item_code = i.item_code and warehouse = %(warehouse)s) as my_boutique,
             (select IFNULL(actual_qty,0) from `tabBin` where item_code = i.item_code and warehouse = %(reserved_warehouse)s) as my_reserved,
             (select IFNULL(sum(actual_qty),0) from `tabBin` where item_code = i.item_code and warehouse not in %(exception_warehouse)s) as other_boutique,
             CONCAT('https://artoftimeindia.com/products/', i.product_handle) as share_link
             FROM `tabItem` i
-            LEFT JOIN `tabItem Price` ip ON i.item_code = ip.item_code AND ip.price_list = %(price_list)s where i.item_group = 'Watch' and i.product_handle is not null
+            where i.item_group = 'Watch' and i.product_handle is not null
             {conditions} 
             GROUP BY i.item_code
             LIMIT %(offset)s,20
             """.format(conditions = condition),{
                 "search" : "%"+search+"%",
                 "offset" : int(offset),
-                "price_list":price_list,
                 "warehouse":warehouse_name,
                 "reserved_warehouse":reserverd_warehouse,
                 "exception_warehouse":exception_warehouse
