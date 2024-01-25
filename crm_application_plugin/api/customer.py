@@ -153,11 +153,11 @@ def get_past_purchase_customer():
 		# Get Sales of this customer by based on customer parameter
 
 		customer_sales_data = frappe.db.sql("""
-		select si.posting_date,sii.item_name,si.rounded_total as price, i.image as file_url
+		select si.posting_date,sii.item_name,sii.rate as price, i.image as file_url
 		from`tabSales Invoice` si
 		Inner Join`tabSales Invoice Item` sii on si.name = sii.parent
 		LEFT JOIN `tabItem` i ON sii.item_code = i.item_code
-		where si.customer = %(customer_name)s order by si.posting_date desc
+		where si.customer = %(customer_name)s and si.docstatus < 2 order by si.posting_date desc
 		""",{'customer_name':customer},as_dict=1)
 
 		create_response(200, "Past Purchase Of Customer List Fetched!", customer_sales_data)
