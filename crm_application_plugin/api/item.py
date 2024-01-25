@@ -12,6 +12,7 @@ from requests.exceptions import RequestException
 
 @frappe.whitelist()
 def get_product_list():
+    
     try:
         search = frappe.local.form_dict.search or ""
         offset = int(frappe.local.form_dict.offset) if frappe.local.form_dict.offset else 0
@@ -36,6 +37,11 @@ def get_product_list():
             create_response(406, "Warehouse Not Define In Boutique Document!")
             return
         
+        if frappe.local.form_dict.myboutique:
+            having_condition = "HAVING my_boutique > 0"
+        else:
+            having_condition = ""
+        
         reserverd_warehouse = frappe.db.get_value("Warehouse",warehouse_name,'custom_reserved_warehouse')
         
         exception_warehouse = [warehouse_name,reserverd_warehouse]
@@ -50,15 +56,17 @@ def get_product_list():
             FROM `tabItem` i
             where i.item_group = 'Watch' and i.product_handle is not null
             {conditions} 
-            GROUP BY i.item_code
+            GROUP BY i.item_code {having_condition}
             LIMIT %(offset)s,20
-            """.format(conditions = condition),{
+            """.format(conditions = condition,having_condition=having_condition),{
                 "search" : "%"+search+"%",
                 "offset" : int(offset),
                 "warehouse":warehouse_name,
                 "reserved_warehouse":reserverd_warehouse,
                 "exception_warehouse":exception_warehouse
         },as_dict=1)
+        
+        
 
         create_response(200, "Item data Fetched Successfully!", item_details)
         return

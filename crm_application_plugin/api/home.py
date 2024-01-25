@@ -40,7 +40,7 @@ def get_home_data():
         "banner_duration":frappe.db.get_single_value("Aetas CRM Configuration","duration")
     }) 
     
-def get_sales_person_herarchy(user):
+def get_sales_person_herarchy(user,salesperson=None):
     employee = frappe.db.get_value("Employee",{"user_id":user},"name")
     if not employee:
         create_response(406,"Employee not found")
@@ -50,13 +50,19 @@ def get_sales_person_herarchy(user):
         create_response(406,"Sales Person not found")
         return
     
-    sales_person_is_group = frappe.db.get_value("Sales Person",sales_person,"is_group")
-    sales_person_list = []
-    if sales_person_is_group:
-        sales_persons = frappe.db.get_all("Sales Person",{"parent_sales_person":sales_person},["name"],pluck="name")
-        sales_person_list = sales_persons
+    if not salesperson:
+        
+        sales_person_is_group = frappe.db.get_value("Sales Person",sales_person,"is_group")
+        sales_person_list = []
+        if sales_person_is_group:
+            sales_persons = frappe.db.get_all("Sales Person",{"parent_sales_person":sales_person},["name"],pluck="name")
+            sales_person_list = sales_persons
+        
+        sales_person_list.append(sales_person)
+    else:
+        
+        sales_person_list = [sales_person]
     
-    sales_person_list.append(sales_person)
         
     return sales_person_list
     

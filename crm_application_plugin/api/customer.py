@@ -6,7 +6,8 @@ from crm_application_plugin.api.home import get_sales_person_herarchy
 
 
 @frappe.whitelist()
-def get_assigned_customer_list():
+def get_assigned_customer_list(salesperson=None):
+	
 	# user = frappe.session.user
 	# Implement Serach Function
 	# Get Frappe user from session, Get Employee for that user and fetch sales person for that employee.
@@ -45,7 +46,7 @@ def get_assigned_customer_list():
 				FROM `tabCustomer` c
 				WHERE c.custom_sales_person in %(sales_person)s {conditions}  LIMIT %(offset)s,20
 			""".format(conditions = condition),{
-				"sales_person":get_sales_person_herarchy(user),
+				"sales_person":get_sales_person_herarchy(user,salesperson),
 				"search" : "%"+search+"%",
 				"offset" : int(offset),
 				"custom_client_tiers":tier
@@ -57,7 +58,7 @@ def get_assigned_customer_list():
 				FROM `tabCustomer` c
 				WHERE c.custom_sales_person is null {conditions}  LIMIT %(offset)s,20
 			""".format(conditions = condition),{
-				"sales_person":get_sales_person_herarchy(user),
+				"sales_person":get_sales_person_herarchy(user,sales_person),
 				"search" : "%"+search+"%",
 				"offset" : int(offset),
 				"custom_client_tiers":tier
@@ -67,8 +68,8 @@ def get_assigned_customer_list():
 
 		for row in customer_data:
 			campaigns = frappe.db.sql("""
-            select custom_customer,reference_name as campaign_name,status from `tabToDo` inner join `tabCampaign` on `tabToDo`.reference_name = `tabCampaign`.name where `tabToDo`.custom_customer = %(customer)s and `tabCampaign`.custom_enable = 1         
-            """,{'customer':row['name']},as_dict=1)
+			select custom_customer,reference_name as campaign_name,status from `tabToDo` inner join `tabCampaign` on `tabToDo`.reference_name = `tabCampaign`.name where `tabToDo`.custom_customer = %(customer)s and `tabCampaign`.custom_enable = 1         
+			""",{'customer':row['name']},as_dict=1)
 			row['campaigns'] = campaigns
 			row['last_contacted_date'] = get_last_contacted_date(row['name'])
    
@@ -282,8 +283,22 @@ def close_active_todo(todo_list):
 
 @frappe.whitelist()
 def sales_person_list():
+	assigned = int(frappe.local.form_dict.assigned) or 0
+	
 	try:
-		sales_person_list = frappe.db.sql("""select sp.name,sp.custom_botique,ep.cell_number,ep.prefered_email from `tabSales Person` sp left join `tabEmployee` ep on sp.employee = ep.name where sp.name not in ('Sales Team')""",as_dict=1)
+		if assigned == 1:
+			employee = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "name")
+			if not employee:
+				create_response(406, "Employee not found for the current user.")
+				return
+			
+			sales_person,is_group = frappe.db.get_value("Sales Person", {"employee": employee}, ["name","is_group"])
+			
+			if is_group:
+				sales_person_list = frappe.db.sql("""select sp.name,sp.custom_botique,ep.cell_number,ep.prefered_email from `tabSales Person` sp left join `tabEmployee` ep on sp.employee = ep.name where sp.name not in ('Sales Team') and sp.parent_sales_person = %(sales_person)s""",{'sales_person':sales_person},as_dict=1)
+				
+		else:
+			sales_person_list = frappe.db.sql("""select sp.name,sp.custom_botique,ep.cell_number,ep.prefered_email from `tabSales Person` sp left join `tabEmployee` ep on sp.employee = ep.name where sp.name not in ('Sales Team')""",as_dict=1)
 		create_response(200,"Sales Person List Fetched!",sales_person_list)
 	except Exception as e:
 		create_response(406,"Internal server error",str(e))
