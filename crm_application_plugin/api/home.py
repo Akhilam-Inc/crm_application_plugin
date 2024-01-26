@@ -13,13 +13,17 @@ def get_home_data():
     
     public_tier = frappe.db.get_all("Client Tiers",filters={"is_public":1},pluck="name")
     customer_counts = frappe.db.sql("""
-        SELECT count(c.custom_client_tiers) as no_of_clients, ct.name as tier from `tabClient Tiers` ct left join `tabCustomer` c on ct.name = c.custom_client_tiers where (c.custom_sales_person in %(sales_person)s or c.custom_client_tiers in %(public_tiers)s)  group by ct.name
+        SELECT count(c.custom_client_tiers) as no_of_clients, ct.name as tier,ct.tier_index from `tabClient Tiers` ct left join `tabCustomer` c on ct.name = c.custom_client_tiers where (c.custom_sales_person in %(sales_person)s or c.custom_client_tiers in %(public_tiers)s)  group by ct.name
     """,
     {
         "sales_person" : get_sales_person_herarchy(frappe.session.user),
         "public_tiers":public_tier
     },as_dict=1)
-
+    
+    client_tiers = [x["tier"] for x in customer_counts]
+    other_tiers = frappe.db.sql(""" select 0 as no_of_clients, name as tier, tier_index from `tabClient Tiers` where name not in %(client_tiers)s """,{"client_tiers":client_tiers},as_dict=1)
+    customer_counts.extend(other_tiers)
+    customer_counts = sorted(customer_counts,key=lambda x : x["tier_index"])
     if customer_counts:
         total = reduce(lambda acc,x : acc + x["no_of_clients"] , customer_counts, 0)
 
