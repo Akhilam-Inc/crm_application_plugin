@@ -283,10 +283,10 @@ def close_active_todo(todo_list):
 
 @frappe.whitelist()
 def sales_person_list():
-	assigned = int(frappe.local.form_dict.assigned) or 0
+	
 	
 	try:
-		if assigned == 1:
+		if frappe.local.form_dict.assigned:
 			employee = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "name")
 			if not employee:
 				create_response(406, "Employee not found for the current user.")

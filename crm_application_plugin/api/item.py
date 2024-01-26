@@ -181,6 +181,7 @@ def brand_list():
             FROM `tabBrand` b
             LEFT JOIN `tabBrand Pdfs` bp ON b.name = bp.parent
             LEFT JOIN `tabBrand Videos` bv ON b.name = bv.parent
+            where b.custom_disabled = 0
         """, as_dict=1)
         
         # Organize the data into a structured format
