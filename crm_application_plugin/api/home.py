@@ -65,7 +65,7 @@ def get_sales_person_herarchy(user,salesperson=None):
         sales_person_list.append(sales_person)
     else:
         
-        sales_person_list = [sales_person]
+        sales_person_list = [salesperson]
     
         
     return sales_person_list
