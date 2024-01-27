@@ -37,7 +37,7 @@ def get_assigned_customer_list(salesperson=None):
 			return
 
 		public_tiers = frappe.db.get_all("Client Tiers",filters={"is_public":1},pluck="name")
-
+		
 		if tier not in public_tiers:
 
 			customer_data = frappe.db.sql("""
@@ -58,7 +58,7 @@ def get_assigned_customer_list(salesperson=None):
 				FROM `tabCustomer` c
 				WHERE c.custom_sales_person is null {conditions}  LIMIT %(offset)s,20
 			""".format(conditions = condition),{
-				"sales_person":get_sales_person_herarchy(user,sales_person),
+				"sales_person":get_sales_person_herarchy(user,salesperson),
 				"search" : "%"+search+"%",
 				"offset" : int(offset),
 				"custom_client_tiers":tier
