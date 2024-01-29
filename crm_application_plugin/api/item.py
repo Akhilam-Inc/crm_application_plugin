@@ -239,7 +239,7 @@ def stock_list_other_botique(item):
                 FROM `tabItem` i
                 LEFT JOIN `tabBin` bn ON i.item_code = bn.item_code 
                 inner join `tabWarehouse` wh on wh.name = bn.warehouse
-                Where bn.warehouse != %(warehouse)s and i.item_code = %(item_code)s and wh.custom_is_reserved = 0
+                Where bn.warehouse != %(warehouse)s and i.item_code = %(item_code)s and wh.custom_is_reserved = 0 and wh.custom_is_disable_in_mobile = 0
                 
                 """,{
                     "warehouse":warehouse_name,

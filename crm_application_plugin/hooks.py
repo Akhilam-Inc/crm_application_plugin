@@ -60,7 +60,8 @@ fixtures = [
                 "Item-custom_brand_warranty","Campaign-custom_client_tiers","Customer-custom_sales_person","Customer-custom_client_tiers","Sales Person-custom_botique","Brand-custom_brand_logo",
                 "Sales Order Item-custom_sales_person","Sales Invoice Item-custom_sales_person","Item-custom_slider_images","Campaign-custom_enable",
                 "Warehouse-custom_reserved_warehouse",
-                "Warehouse-custom_is_reserved"
+                "Warehouse-custom_is_reserved",
+                "Warehouse-custom_is_disable_in_mobile"
 			]
 		]
 	]},
