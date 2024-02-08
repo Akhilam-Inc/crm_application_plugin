@@ -303,3 +303,48 @@ def sales_person_list():
 		create_response(200,"Sales Person List Fetched!",sales_person_list)
 	except Exception as e:
 		create_response(406,"Internal server error",str(e))
+
+
+
+@frappe.whitelist()
+def update_customer_mobile(customer_name, mobile_number):
+	try:
+		frappe.db.sql("""
+			UPDATE `tabContact Phone` AS cp
+			LEFT JOIN `tabDynamic Link` AS link ON cp.parent = link.parent
+			SET cp.phone = %(phone)s 
+			WHERE cp.parenttype = 'Contact' 
+			AND link.link_doctype = 'Customer'
+			AND link.link_name = %(customer)s
+		""", {"phone":mobile_number, "customer":customer_name})
+
+		frappe.db.sql("""
+			UPDATE `tabContact` AS c
+			INNER JOIN `tabDynamic Link` AS link ON c.name = link.parent
+			SET c.mobile_no = %(phone)s 
+			WHERE link.link_doctype = 'Customer'
+			AND link.link_name = %(customer)s
+		""", {"phone":mobile_number, "customer":customer_name})
+
+		customer = frappe.get_doc("Customer", customer_name)
+		customer.mobile_no = mobile_number
+		customer.save(ignore_permissions = 1)
+		frappe.db.commit()
+
+		create_response(200, f"Mobile Number Updated For {customer_name}")
+		return
+	except Exception as e:
+		create_response(406,'Mobile Number Updated Failed',str(e))
+		return
+	
+
+@frappe.whitelist()
+def get_all_customer_list():
+	try:
+		customer_list = frappe.db.sql("""select customer_name,mobile_no from`tabCustomer`""",as_dict=1)
+		create_response(200, "Customer List Fetched.",customer_list)
+		return
+
+	except Exception as e:
+		create_response(406,'Customer List Fetched Failed!',str(e))
+		return
