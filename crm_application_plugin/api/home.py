@@ -77,3 +77,57 @@ def get_sales_person_herarchy(user,salesperson=None):
         
     return sales_person_list
     
+@frappe.whitelist()
+def get_total_count_boutique():
+    try:
+        search = frappe.local.form_dict.search or ""
+
+        condition = ""
+        if search is not None and search != "":
+            condition += "AND (i.item_name LIKE %(search)s OR i.item_code LIKE %(search)s)"
+
+        employee = frappe.get_value("Employee", {"user_id": frappe.session.user}, "name")
+        if not employee:
+            create_response(406, "Employee not found for the current user.")
+            return
+
+        boutique_name = frappe.db.get_value("Sales Person", {"employee": employee}, "custom_botique")
+        if not boutique_name:
+            create_response(406, "Boutique Not Defined For This Sales Person!")
+            return
+
+        warehouse_name = frappe.db.get_value("Boutique", boutique_name, 'boutique_warehouse')
+        if not warehouse_name:
+            create_response(406, "Warehouse Not Defined In Boutique Document!")
+            return
+
+        if frappe.local.form_dict.myboutique:
+            having_condition = "HAVING my_boutique > 0"
+        else:
+            having_condition = ""
+
+        reserverd_warehouse = frappe.db.get_value("Warehouse", warehouse_name, 'custom_reserved_warehouse')
+
+        exception_warehouse = [warehouse_name, reserverd_warehouse]
+
+        total_boutique_count = frappe.db.sql("""
+            SELECT i.item_code,(select IFNULL(actual_qty,0) from `tabBin` where item_code = i.item_code and warehouse = %(warehouse)s) as my_boutique,
+            (select IFNULL(sum(actual_qty),0) from `tabBin` where item_code = i.item_code and warehouse not in %(exception_warehouse)s) as other_boutique
+            FROM `tabItem` i 
+            where i.item_group = 'Watch' and i.product_handle is not null {conditions} 
+            GROUP BY i.item_code {having_condition}
+            """.format(conditions = condition,having_condition=having_condition),{
+                "search" : "%"+search+"%",
+                "warehouse":warehouse_name,
+                "reserved_warehouse":reserverd_warehouse,
+                "exception_warehouse":exception_warehouse
+        },as_dict=1)
+
+        total_my_boutique = sum(item.get("my_boutique", 0) or 0 for item in total_boutique_count)
+        total_other_boutique = sum(item.get("other_boutique", 0) or 0 for item in total_boutique_count)
+
+        create_response(200, "Total Boutique Count Fetched Successfully!", {"total_my_boutique": total_my_boutique, "total_other_boutique": total_other_boutique})
+        return
+    except Exception as e:
+        create_response(500, "An error occurred while getting the total count of items", e)
+        return
