@@ -65,22 +65,8 @@ def get_product_list():
                 "reserved_warehouse":reserverd_warehouse,
                 "exception_warehouse":exception_warehouse
         },as_dict=1)
-        
-        total_my_boutique = 0
-        total_other_boutique = 0
-        for item in item_details:
-            total_my_boutique += item.get("my_boutique", 0) or 0
-            total_other_boutique += item.get("other_boutique", 0) or 0
-            
-        item_response = {
-            "item_details": item_details,
-            "total_my_boutique": total_my_boutique,
-            "total_other_boutique": total_other_boutique
-        }
-        
-        
 
-        create_response(200, "Item data Fetched Successfully!", item_response)
+        create_response(200, "Item data Fetched Successfully!", item_details)
         return
     except Exception as e:
         create_response(500,"An error occurred while getting list of item",e)

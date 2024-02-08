@@ -169,7 +169,7 @@ def get_past_purchase_customer():
 
 
 @frappe.whitelist()
-def create_customer(customer_name,mobile_number,email_address,date_of_birth,anniversary_date,address_line1,address_line2,city,state,pincode,country,boutique,sales_person,salutation):
+def create_customer(customer_name,mobile_number,email_address,address_line1,address_line2,city,state,pincode,country,boutique,sales_person,salutation,date_of_birth=None,anniversary_date=None):
 	if not customer_name or not mobile_number or not state:
 		create_response(422, "Invalid request data", "Please provide all mandatory field data.")
 		return
