@@ -59,8 +59,11 @@ def get_sales_person_herarchy(user,salesperson=None):
         sales_person_is_group = frappe.db.get_value("Sales Person",sales_person,"is_group")
         sales_person_list = []
         if sales_person_is_group:
-            sales_persons = frappe.db.get_all("Sales Person",{"parent_sales_person":sales_person},["name"],pluck="name")
-            sales_person_list = sales_persons
+            sales_persons = frappe.db.get_all("Sales Person", filters={"parent_sales_person": sales_person}, pluck="name")
+            for person in sales_persons:
+                sales_person_list.extend(get_sales_person_herarchy(user, salesperson=person))
+        else:
+            sales_person_list.append(sales_person)
         
         sales_person_list.append(sales_person)
     else:
@@ -69,7 +72,4 @@ def get_sales_person_herarchy(user,salesperson=None):
     
         
     return sales_person_list
-    
-    
-
     

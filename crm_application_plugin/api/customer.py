@@ -170,7 +170,7 @@ def get_past_purchase_customer():
 
 @frappe.whitelist()
 def create_customer(customer_name,mobile_number,email_address,date_of_birth,anniversary_date,address_line1,address_line2,city,state,pincode,country,boutique,sales_person,salutation):
-	if not customer_name or not mobile_number or not email_address or not address_line1 or not city or not state or not boutique or not sales_person or not country:
+	if not customer_name or not mobile_number or not state:
 		create_response(422, "Invalid request data", "Please provide all mandatory field data.")
 		return
 	if not frappe.db.exists("Country",country):
@@ -303,3 +303,48 @@ def sales_person_list():
 		create_response(200,"Sales Person List Fetched!",sales_person_list)
 	except Exception as e:
 		create_response(406,"Internal server error",str(e))
+
+
+
+@frappe.whitelist()
+def update_customer_mobile(customer_name, mobile_number):
+	try:
+		frappe.db.sql("""
+			UPDATE `tabContact Phone` AS cp
+			LEFT JOIN `tabDynamic Link` AS link ON cp.parent = link.parent
+			SET cp.phone = %(phone)s 
+			WHERE cp.parenttype = 'Contact' 
+			AND link.link_doctype = 'Customer'
+			AND link.link_name = %(customer)s
+		""", {"phone":mobile_number, "customer":customer_name})
+
+		frappe.db.sql("""
+			UPDATE `tabContact` AS c
+			INNER JOIN `tabDynamic Link` AS link ON c.name = link.parent
+			SET c.mobile_no = %(phone)s 
+			WHERE link.link_doctype = 'Customer'
+			AND link.link_name = %(customer)s
+		""", {"phone":mobile_number, "customer":customer_name})
+
+		customer = frappe.get_doc("Customer", customer_name)
+		customer.mobile_no = mobile_number
+		customer.save(ignore_permissions = 1)
+		frappe.db.commit()
+
+		create_response(200, f"Mobile Number Updated For {customer_name}")
+		return
+	except Exception as e:
+		create_response(406,'Mobile Number Updated Failed',str(e))
+		return
+	
+
+@frappe.whitelist()
+def get_all_customer_list():
+	try:
+		customer_list = frappe.db.sql("""select customer_name,mobile_no from`tabCustomer` where disabled = 0""",as_dict=1)
+		create_response(200, "Customer List Fetched.",customer_list)
+		return
+
+	except Exception as e:
+		create_response(406,'Customer List Fetched Failed!',str(e))
+		return
