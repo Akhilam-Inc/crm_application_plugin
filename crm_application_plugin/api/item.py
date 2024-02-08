@@ -65,7 +65,7 @@ def get_product_list():
                 "reserved_warehouse":reserverd_warehouse,
                 "exception_warehouse":exception_warehouse
         },as_dict=1)
-
+        
         total_my_boutique = 0
         total_other_boutique = 0
         for item in item_details:
@@ -77,43 +77,10 @@ def get_product_list():
             "total_my_boutique": total_my_boutique,
             "total_other_boutique": total_other_boutique
         }
+        
+        
 
         create_response(200, "Item data Fetched Successfully!", item_response)
-        return
-    except Exception as e:
-        create_response(500,"An error occurred while getting list of item",e)
-        return   
-
-
-@frappe.whitelist()
-def get_product_detail(item_code):
-    # Get details of product based on parameter
-    ecommerce_item_code = frappe.db.get_value("Ecommerce Item", {"erpnext_item_code": item_code}, "integration_item_code")
-    if not ecommerce_item_code:
-        create_response(406, "Ecommerce Item Not Found!")
-        return
-    try:
-        product_details = get_product_details_from_shopify(ecommerce_item_code)
-        if not product_details:
-            create_response(406, "Product Not Found!")
-            return
-        product_meta = get_product_details_from_shopify(ecommerce_item_code, 1)
-        if not product_meta:
-            create_response(406, "Product Meta Not Found!")
-            return
-
-        item_info = {
-            'item_name': product_details["product"]["title"],
-            'description': product_details["product"]["body_html"],
-            'reference': get_metafield_value(product_meta, "reference"),
-            'collection': get_metafield_value(product_meta, "collection"),
-        }
-        
-        total_my_boutique = sum(item.get("my_boutique", 0) or 0 for item in item_details)
-        total_other_boutique = sum(item.get("other_boutique", 0) or 0 for item in item_details)
-        
-
-        create_response(200, "Item data Fetched Successfully!", item_details)
         return
     except Exception as e:
         create_response(500,"An error occurred while getting list of item",e)
