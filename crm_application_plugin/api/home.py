@@ -41,11 +41,15 @@ def get_home_data():
             "no_of_clients" : x["no_of_clients"],
             "percentage" : 0 if total == 0 else round((x["no_of_clients"] / total) * 100, 2)
         }, customer_counts))
+        
+    total_count = get_total_count_boutique()
      
     create_response(200 , "Home Data Fetched Successfully" , {
         "banners" : banners,
         "overviews" : customer_counts,
-        "banner_duration":frappe.db.get_single_value("Aetas CRM Configuration","duration")
+        "banner_duration":frappe.db.get_single_value("Aetas CRM Configuration","duration"),
+        "total_my_boutique": total_count.get("total_my_boutique", 0),
+        "total_other_boutique": total_count.get("total_other_boutique", 0)
     }) 
     
 def get_sales_person_herarchy(user,salesperson=None):
@@ -77,7 +81,7 @@ def get_sales_person_herarchy(user,salesperson=None):
         
     return sales_person_list
     
-@frappe.whitelist()
+
 def get_total_count_boutique():
     try:
         search = frappe.local.form_dict.search or ""
@@ -126,8 +130,11 @@ def get_total_count_boutique():
         total_my_boutique = sum(item.get("my_boutique", 0) or 0 for item in total_boutique_count)
         total_other_boutique = sum(item.get("other_boutique", 0) or 0 for item in total_boutique_count)
 
-        create_response(200, "Total Boutique Count Fetched Successfully!", {"total_my_boutique": total_my_boutique, "total_other_boutique": total_other_boutique})
-        return
+        return {
+            "total_my_boutique": total_my_boutique,
+            "total_other_boutique": total_other_boutique    
+        }
+        
     except Exception as e:
         create_response(500, "An error occurred while getting the total count of items", e)
         return
