@@ -341,10 +341,22 @@ def update_customer_mobile(customer_name, mobile_number):
 @frappe.whitelist()
 def get_all_customer_list():
 	try:
-		customer_list = frappe.db.sql("""select customer_name,mobile_no from`tabCustomer` where disabled = 0""",as_dict=1)
-		create_response(200, "Customer List Fetched.",customer_list)
+		search = frappe.local.form_dict.search or ""
+		offset = int(frappe.local.form_dict.offset) if frappe.local.form_dict.offset else 0
+		
+
+		condition = "AND customer_name LIKE %(search)s" if search else ""
+
+		customer_list = frappe.db.sql("""
+			SELECT customer_name, mobile_no 
+			FROM `tabCustomer`
+			WHERE disabled = 0 {conditions}
+			LIMIT %(offset)s, 20
+		""".format(conditions=condition), {"search": f"%{search}%", "offset": int(offset)}, as_dict=True)
+
+		create_response(200, "Customer List Fetched.", customer_list)
 		return
 
 	except Exception as e:
-		create_response(406,'Customer List Fetched Failed!',str(e))
+		create_response(406, 'Customer List Fetched Failed!', str(e))
 		return
