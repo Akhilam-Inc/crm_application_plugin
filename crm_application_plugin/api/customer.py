@@ -341,7 +341,7 @@ def update_customer_mobile(customer_name, mobile_number):
 @frappe.whitelist()
 def get_all_customer_list():
 	try:
-		customer_list = frappe.db.sql("""select customer_name,mobile_no from`tabCustomer`""",as_dict=1)
+		customer_list = frappe.db.sql("""select customer_name,mobile_no from`tabCustomer` where disabled = 0""",as_dict=1)
 		create_response(200, "Customer List Fetched.",customer_list)
 		return
 
