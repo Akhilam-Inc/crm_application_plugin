@@ -21,7 +21,11 @@ def get_home_data():
     },as_dict=1)
     
     client_tiers = [x["tier"] for x in customer_counts]
-    other_tiers = frappe.db.sql(""" select 0 as no_of_clients, name as tier, tier_index from `tabClient Tiers` where name not in %(client_tiers)s """,{"client_tiers":client_tiers},as_dict=1)
+    if len(client_tiers) > 0:
+        condition = " where name not in %(client_tiers)s"
+    else:
+        condition = ""
+    other_tiers = frappe.db.sql(""" select 0 as no_of_clients, name as tier, tier_index from `tabClient Tiers` {condition} """.format(condition),{"client_tiers":client_tiers},as_dict=1)
     customer_counts.extend(other_tiers)
     customer_counts = sorted(customer_counts,key=lambda x : x["tier_index"])
     if customer_counts:
