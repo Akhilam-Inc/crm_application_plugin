@@ -179,17 +179,17 @@ def create_customer(customer_name,mobile_number,email_address,address_line1,addr
 	try:
 		customer_obj = frappe.get_doc({
 			"doctype": "Customer",
-			"customer_name":customer_name,
-			"salutation":salutation,
-			"customer_type": "Individual",  
-			"territory": "All Territories",  
-			"customer_group":"Individual",
-			"custom_date_of_birth":date_of_birth,
-			"custom_anniversary_date":anniversary_date,
-			"boutique" : boutique,
-			"custom_sales_person":sales_person,
-	
+			"customer_name": customer_name,
+			"salutation": salutation or '',
+			"customer_type": "Individual",
+			"territory": "All Territories",
+			"customer_group": "Individual",
+			"custom_date_of_birth": date_of_birth or '',
+			"custom_anniversary_date": anniversary_date or '',
+			"boutique": boutique or '',
+			"custom_sales_person": sales_person or '',
 		})
+
 		customer_doc = customer_obj.insert(ignore_permissions=True)
 		customer_created = True
 
