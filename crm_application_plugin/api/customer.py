@@ -228,7 +228,7 @@ def create_customer(customer_name,mobile_number,email_address,address_line1,addr
 				}]
 			})
 		
-		add_doc = address_doc.insert(ignore_permissions = True)
+			add_doc = address_doc.insert(ignore_permissions = True)
 		customer_doc.customer_primary_address = add_doc.name
 		customer_doc.customer_primary_contact = contact_document.name
 		customer_doc.save(ignore_permissions=True)
