@@ -170,12 +170,10 @@ def get_past_purchase_customer():
 
 @frappe.whitelist()
 def create_customer(customer_name,mobile_number,email_address,address_line1,address_line2,city,state,pincode,country,boutique,sales_person,salutation,date_of_birth=None,anniversary_date=None):
-	if not customer_name or not mobile_number or not state:
+	if not customer_name or not mobile_number or not email_address:
 		create_response(422, "Invalid request data", "Please provide all mandatory field data.")
 		return
-	if not frappe.db.exists("Country",country):
-		create_response(406,"Invalid Country data")
-		return
+	
 	try:
 		customer_obj = frappe.get_doc({
 			"doctype": "Customer",
@@ -193,41 +191,43 @@ def create_customer(customer_name,mobile_number,email_address,address_line1,addr
 		customer_doc = customer_obj.insert(ignore_permissions=True)
 		customer_created = True
 
-		contact_doc = frappe.get_doc({
-			'doctype':'Contact',
-			'first_name':customer_name,
-			'email_ids':[
-				{'email_id':email_address,
-				'is_primary':1}
-			],
-			'phone_nos':[
-				{"phone":mobile_number,
-				"is_primary_mobile_no":1}
-			],
-			'links':[{
-				'link_doctype':'Customer',
-				'link_name':customer_doc.name
+		if mobile_number:
+			contact_doc = frappe.get_doc({
+				'doctype':'Contact',
+				'first_name':customer_name,
+				'email_ids':[
+					{'email_id':email_address or '',
+					'is_primary':1}
+				],
+				'phone_nos':[
+					{"phone":mobile_number,
+					"is_primary_mobile_no":1}
+				],
+				'links':[{
+					'link_doctype':'Customer',
+					'link_name':customer_doc.name
 
-			}]
-		})
-		contact_document = contact_doc.insert(ignore_permissions=True)
-		contact_created = True
+				}]
+			})
+			contact_document = contact_doc.insert(ignore_permissions=True)
+			contact_created = True
 
-		address_doc = frappe.get_doc({
-			'doctype':'Address',
-			'address_type':'Billing',
-			'address_line1':address_line1,
-			'address_line2':address_line2,
-			'city':city,
-			'state':state,
-			'pincode':pincode,
-			'country':country,
-			'links':[{
-				'link_doctype':'Customer',
-				'link_name':customer_doc.name
+		if address_line1 and city and state and pincode and country:
+			address_doc = frappe.get_doc({
+				'doctype':'Address',
+				'address_type':'Billing',
+				'address_line1':address_line1,
+				'address_line2':address_line2,
+				'city':city,
+				'state':state,
+				'pincode':pincode,
+				'country':country,
+				'links':[{
+					'link_doctype':'Customer',
+					'link_name':customer_doc.name
 
-			}]
-		})
+				}]
+			})
 		
 		add_doc = address_doc.insert(ignore_permissions = True)
 		address_created = True
@@ -250,7 +250,7 @@ def create_customer(customer_name,mobile_number,email_address,address_line1,addr
 def get_customer_detail(customer_name):
 	try:
 		customer_detail = frappe.db.sql("""
-		select c.customer_name,c.custom_date_of_birth,c.custom_anniversary_date,c.custom_sales_person,c.custom_client_tiers,
+		select c.name,c.customer_name,c.custom_date_of_birth,c.custom_anniversary_date,c.custom_sales_person,c.custom_client_tiers,
 		c.mobile_no,c.email_id,c.customer_primary_address,(SELECT MAX(si.posting_date) FROM `tabSales Invoice` si WHERE si.customer = c.customer_name) AS last_purchase_date
 		from `tabCustomer` c 
 		where name = %(customer)s""", {'customer': customer_name}, as_dict=1)
@@ -268,6 +268,7 @@ def get_customer_detail(customer_name):
 			create_response(406, "Customer data not found", "Customer data is incomplete or does not exist")
 			return
 	except Exception as e:
+		frappe.log_error("Customer Details Fetched Failed",frappe.get_traceback())
 		create_response(406, "Internal server error", str(e))
 		return
 
