@@ -170,7 +170,7 @@ def get_past_purchase_customer():
 
 @frappe.whitelist()
 def create_customer(customer_name,mobile_number,email_address,address_line1,address_line2,city,state,pincode,country,boutique,sales_person,salutation,date_of_birth=None,anniversary_date=None):
-	if not customer_name or not mobile_number or not email_address:
+	if not customer_name or not mobile_number:
 		create_response(422, "Invalid request data", "Please provide all mandatory field data.")
 		return
 	
@@ -189,16 +189,11 @@ def create_customer(customer_name,mobile_number,email_address,address_line1,addr
 		})
 
 		customer_doc = customer_obj.insert(ignore_permissions=True)
-		customer_created = True
 
 		if mobile_number:
 			contact_doc = frappe.get_doc({
 				'doctype':'Contact',
 				'first_name':customer_name,
-				'email_ids':[
-					{'email_id':email_address or '',
-					'is_primary':1}
-				],
 				'phone_nos':[
 					{"phone":mobile_number,
 					"is_primary_mobile_no":1}
@@ -209,8 +204,12 @@ def create_customer(customer_name,mobile_number,email_address,address_line1,addr
 
 				}]
 			})
-			contact_document = contact_doc.insert(ignore_permissions=True)
-			contact_created = True
+		if email_address:
+			contact_doc.append('email_ids',{
+				'email_id':email_address,
+				'is_primary':1
+			})
+		contact_document = contact_doc.insert(ignore_permissions=True)
 
 		if address_line1 and city and state and pincode and country:
 			address_doc = frappe.get_doc({
@@ -230,7 +229,6 @@ def create_customer(customer_name,mobile_number,email_address,address_line1,addr
 			})
 		
 		add_doc = address_doc.insert(ignore_permissions = True)
-		address_created = True
 		customer_doc.customer_primary_address = add_doc.name
 		customer_doc.customer_primary_contact = contact_document.name
 		customer_doc.save(ignore_permissions=True)
