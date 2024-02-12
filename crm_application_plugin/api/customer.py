@@ -282,11 +282,12 @@ def close_active_todo(todo_list):
 		return
 
 @frappe.whitelist()
-def sales_person_list():
+def sales_person_list(assigned=None):
 	
 	
 	try:
-		if frappe.local.form_dict.assigned:
+		#if assigned then only get sales person assigned to the current user
+		if assigned:
 			employee = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "name")
 			if not employee:
 				create_response(406, "Employee not found for the current user.")
@@ -295,14 +296,36 @@ def sales_person_list():
 			sales_person,is_group = frappe.db.get_value("Sales Person", {"employee": employee}, ["name","is_group"])
 			
 			if is_group:
-				sales_person_list = frappe.db.sql("""select sp.name,sp.custom_botique,ep.cell_number,ep.prefered_email from `tabSales Person` sp left join `tabEmployee` ep on sp.employee = ep.name where sp.name not in ('Sales Team') and sp.parent_sales_person = %(sales_person)s""",{'sales_person':sales_person},as_dict=1)
+				sales_person_list = get_decendants(sales_person)
 				
+				if sales_person_list:
+					create_response(200,"Sales Person List Fetched!",sales_person_list)
+					
+					
+				
+			else:
+				create_response(200,"Sales Person List Fetched!",[])
+				
+		
+		#Get all sales person
 		else:
 			sales_person_list = frappe.db.sql("""select sp.name,sp.custom_botique,ep.cell_number,ep.prefered_email from `tabSales Person` sp left join `tabEmployee` ep on sp.employee = ep.name where sp.name not in ('Sales Team')""",as_dict=1)
 		create_response(200,"Sales Person List Fetched!",sales_person_list)
 	except Exception as e:
 		create_response(406,"Internal server error",str(e))
 
+def get_decendants(sales_person):
+	
+	sales_person_list = frappe.db.sql("""select sp.is_group,sp.name,sp.custom_botique,ep.cell_number,ep.prefered_email from `tabSales Person` sp left join `tabEmployee` ep on sp.employee = ep.name where sp.name not in ('Sales Team') and sp.parent_sales_person = %(sales_person)s""",{'sales_person':sales_person},as_dict=1)
+	
+	
+	for sp in sales_person_list:
+		
+		if sp['is_group'] == 1:
+			sub_sales_person_list = get_decendants(sp['name'])
+			sales_person_list.extend(sub_sales_person_list)
+	
+	return sales_person_list
 
 
 @frappe.whitelist()
