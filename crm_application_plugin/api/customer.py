@@ -158,7 +158,8 @@ def get_past_purchase_customer():
 		from`tabSales Invoice` si
 		Inner Join`tabSales Invoice Item` sii on si.name = sii.parent
 		LEFT JOIN `tabItem` i ON sii.item_code = i.item_code
-		where si.customer = %(customer_name)s and si.docstatus < 2 order by si.posting_date desc
+		where si.customer = %(customer_name)s and si.docstatus = 1 and si.is_return = 0 and si.status != 'Credit Note Issued'
+		order by si.posting_date desc
 		""",{'customer_name':customer},as_dict=1)
 
 		create_response(200, "Past Purchase Of Customer List Fetched!", customer_sales_data)
@@ -284,7 +285,7 @@ def close_active_todo(todo_list):
 @frappe.whitelist()
 def sales_person_list(assigned=None):
 	
-	
+	sales_person_list = []
 	try:
 		#if assigned then only get sales person assigned to the current user
 		if assigned:
