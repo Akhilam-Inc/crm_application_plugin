@@ -44,7 +44,11 @@ def get_product_list():
         
         reserverd_warehouse = frappe.db.get_value("Warehouse",warehouse_name,'custom_reserved_warehouse')
         
+        disabled_warehouse = frappe.db.get_list("Warehouse",filters={"custom_is_disable_in_mobile":1},fields=["name"],pluck="name")
+        
         exception_warehouse = [warehouse_name,reserverd_warehouse]
+        
+        exception_warehouse.extend(disabled_warehouse)
 
 
         item_details = frappe.db.sql("""
