@@ -14,12 +14,21 @@ from requests.exceptions import RequestException
 def get_product_list():
     
     try:
+        min_price = frappe.local.form_dict.min_price
+        max_price = frappe.local.form_dict.max_price
+        brand = frappe.local.form_dict.brand
         search = frappe.local.form_dict.search or ""
         offset = int(frappe.local.form_dict.offset) if frappe.local.form_dict.offset else 0
 
         condition = ("")
         if search is not None and search != "":
             condition += "and (i.item_name like %(search)s or i.item_code like %(search)s)"
+        
+        if min_price and max_price:
+            condition += " and i.shopify_selling_rate between %(min_price)s and %(max_price)s"
+            
+        if brand:
+            condition += " and i.brand = %(brand)s"
                
         
         employee = frappe.get_value("Employee", {"user_id": frappe.session.user}, "name")
@@ -42,15 +51,15 @@ def get_product_list():
         else:
             having_condition = ""
         
-        reserverd_warehouse = frappe.db.get_value("Warehouse",warehouse_name,'custom_reserved_warehouse')
+        reserverd_warehouse = frappe.db.get_list("Warehouse",filters={"custom_is_reserved":1},fields=["name"],pluck="name")
         
         disabled_warehouse = frappe.db.get_list("Warehouse",filters={"custom_is_disable_in_mobile":1},fields=["name"],pluck="name")
         
-        exception_warehouse = [warehouse_name,reserverd_warehouse]
+        exception_warehouse = reserverd_warehouse + disabled_warehouse
         
         exception_warehouse.extend(disabled_warehouse)
 
-
+        
         item_details = frappe.db.sql("""
             SELECT i.item_code, i.item_name, IFNULL(i.image,'') as image, i.shopify_selling_rate as price,
             (select IFNULL(actual_qty,0) from `tabBin` where item_code = i.item_code and warehouse = %(warehouse)s) as my_boutique,
@@ -67,7 +76,10 @@ def get_product_list():
                 "offset" : int(offset),
                 "warehouse":warehouse_name,
                 "reserved_warehouse":reserverd_warehouse,
-                "exception_warehouse":exception_warehouse
+                "exception_warehouse":exception_warehouse,
+                "min_price":min_price,
+                "max_price":max_price,
+                "brand":brand
         },as_dict=1)
 
         create_response(200, "Item data Fetched Successfully!", item_details)
