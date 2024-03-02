@@ -57,7 +57,7 @@ def get_product_list():
         
         exception_warehouse = reserverd_warehouse + disabled_warehouse
         
-        exception_warehouse.extend(disabled_warehouse)
+        exception_warehouse.append(warehouse_name)
 
         
         item_details = frappe.db.sql("""
