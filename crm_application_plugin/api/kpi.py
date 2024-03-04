@@ -61,7 +61,7 @@ def get_target(sales_person_list, month, fiscal_year):
 
 def get_achived(sales_person_list):
     sales_target_achieved_for_current_month = frappe.db.sql("""
-    select sum(sii.amount) as sales,count(si.name) as si_count,sum(sii.qty) as itm_qty,sum(sii.qty)/count(si.name) as unit_per_trans,sum(sii.amount)/count(si.name) as avg_amt_per_invoice  from `tabSales Invoice Item` sii inner join `tabSales Invoice` si on sii.parent = si.name where si.docstatus = 1 and sii.custom_sales_person IN %(sales_person_list)s and month(si.posting_date) = month(now()) and year(si.posting_date) = year(now()) group by month(si.posting_date),year(si.posting_date)""",{ "sales_person_list": sales_person_list},as_dict=1)
+    select sum(sii.amount) as sales,count(si.name) as si_count,sum(sii.qty) as itm_qty,sum(sii.qty)/count(si.name) as unit_per_trans,sum(sii.amount)/count(si.name) as avg_amt_per_invoice  from `tabSales Invoice Item` sii inner join `tabSales Invoice` si on sii.parent = si.name where si.docstatus = 1 and sii.sales_person IN %(sales_person_list)s and month(si.posting_date) = month(now()) and year(si.posting_date) = year(now()) group by month(si.posting_date),year(si.posting_date)""",{ "sales_person_list": sales_person_list},as_dict=1)
     
     return sales_target_achieved_for_current_month
 
