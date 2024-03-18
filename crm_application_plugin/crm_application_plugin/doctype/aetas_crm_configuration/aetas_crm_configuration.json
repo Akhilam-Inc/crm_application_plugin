@@ -8,9 +8,8 @@
  "engine": "InnoDB",
  "field_order": [
   "set_client_tiers_based_on_days",
-  "default_price_list",
   "duration",
-  "banner_image"
+  "assign_customer_tier"
  ],
  "fields": [
   {
@@ -19,27 +18,20 @@
    "label": "Set client tiers based on days"
   },
   {
-   "fieldname": "default_price_list",
-   "fieldtype": "Link",
-   "label": "Default Price List",
-   "options": "Price List"
-  },
-  {
-   "fieldname": "banner_image",
-   "fieldtype": "Table",
-   "label": "Banner Image",
-   "options": "Home page banner mobile"
-  },
-  {
    "fieldname": "duration",
    "fieldtype": "Int",
    "label": "Duration"
+  },
+  {
+   "fieldname": "assign_customer_tier",
+   "fieldtype": "Button",
+   "label": "Assign Customer Tier"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-12-02 11:11:16.174603",
+ "modified": "2024-03-18 15:15:04.555502",
  "modified_by": "Administrator",
  "module": "Crm Application Plugin",
  "name": "Aetas CRM Configuration",

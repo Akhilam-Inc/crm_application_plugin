@@ -10,14 +10,40 @@ def assign_customer_tier():
             sales_of_customer = get_customer(customer['name'])
             tier = get_applicable_slab(sales_of_customer)
             frappe.db.set_value("Customer",customer['name'],"custom_client_tiers",tier)
+            set_inactive_customers()
             frappe.db.commit()
     except Exception as e:
         frappe.log_error(message=e, title="Assign Tier Error")
         
-
+def set_inactive_customers():
+    days = frappe.db.get_single_value("Aetas CRM Configuration", "set_client_tiers_based_on_days")
+    inactive_customers = frappe.db.sql("""
+        SELECT name 
+        FROM `tabCustomer` 
+        WHERE name NOT IN (
+            SELECT customer 
+            FROM `tabSales Invoice` 
+            WHERE docstatus = 1 
+            AND posting_date > %(last_sales_date)s
+        )
+        AND name IN (
+            SELECT customer 
+            FROM `tabSales Invoice` 
+            WHERE docstatus = 1 
+            AND posting_date <= %(last_sales_date)s
+        )
+    """, {
+        "last_sales_date": add_to_date(frappe.utils.today(), days=-days)
+    }, as_list=1)
+    
+    inactive_tier_name = frappe.db.get_value("Client Tiers", {"inactive_customer_tier": 1}, "name")
+    
+    for customer in inactive_customers:
+        frappe.db.set_value("Customer", customer[0], "custom_client_tiers", inactive_tier_name)
 
 def get_customer(customer):
-    sales_date = add_to_date(frappe.utils.today(), years=-2)
+    set_client_tiers_based_on_days = frappe.db.get_single_value("Aetas CRM Configuration", "set_client_tiers_based_on_days")
+    sales_date = add_to_date(frappe.utils.today(),days=-(set_client_tiers_based_on_days or 730))
     sales_details = frappe.db.sql("""
     select customer,sum(grand_total) as net_sales from `tabSales Invoice` where docstatus = 1 and customer = %(customer)s and posting_date > %(last_sales_date)s group by customer
     """,({
@@ -29,7 +55,7 @@ def get_customer(customer):
 
 def get_applicable_slab(sales):
     tier_slab = frappe.db.sql("""
-    select tier,min_purchase,max_purchase from `tabClient Tiers` 
+    select tier,min_purchase,max_purchase from `tabClient Tiers` where inactive_customer_tier = 0
     """,as_dict = 1)
 
     for item in tier_slab:
