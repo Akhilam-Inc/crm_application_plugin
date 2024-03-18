@@ -20,7 +20,7 @@ def get_assigned_customer_list(salesperson=None):
 
 		condition = ("")
 		if search is not None and search != "":
-			condition += "and c.customer_name like %(search)s"
+			condition += "and (c.customer_name like %(search)s) or (c.mobile_no like %(search)s)"
 
 		if tier is not None and tier != "":
 			condition += "and c.custom_client_tiers = %(custom_client_tiers)s"
