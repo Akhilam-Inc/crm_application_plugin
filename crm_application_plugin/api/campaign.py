@@ -28,7 +28,7 @@ def campaign_list():
     on td.reference_name = cp.name 
     inner join `tabCustomer` cu
     on td.custom_customer = cu.name
-    where cp.custom_enable = 1 and cu.sales_person in %(sales_persons)s
+    where cp.custom_enable = 1 and cu.custom_sales_person in %(sales_persons)s
     group by cp.name        
     """,{"sales_persons": sales_persons},
     as_dict=1)
