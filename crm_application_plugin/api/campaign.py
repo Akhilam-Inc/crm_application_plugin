@@ -21,7 +21,7 @@ def create_campaign(campaign_name,start_date,end_date):
 @frappe.whitelist()
 def campaign_list():
     campaign_list = frappe.db.sql("""
-    select count(td.custom_customer) as customer_count,cp.name as campaign,cp.custom_start_date,cp.custom_end_date from `tabToDo` td inner join `tabCampaign` cp on td.reference_name = cp.name where cp.custom_enable = 1 group by cp.name        
+    select count(td.custom_customer) as customer_count,cp.name as campaign,cp.custom_start_date,cp.custom_end_date,cp.description from `tabToDo` td inner join `tabCampaign` cp on td.reference_name = cp.name where cp.custom_enable = 1 group by cp.name        
     """,as_dict=1)
 
     create_response(200,"List of Campaign fetched successfully",campaign_list)

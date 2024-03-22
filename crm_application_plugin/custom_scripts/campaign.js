@@ -26,7 +26,8 @@ frappe.ui.form.on('Campaign', {
                     frappe.call({
                         method: 'crm_application_plugin.crm_application_plugin.overrides.campaign.get_customer_by_tiers',
                         args: {
-                            'client_tier': frm.doc.custom_client_tiers
+                            'client_tier': frm.doc.custom_client_tiers,
+                            'sales_person':frm.doc.custom_sales_person
                         },
                         freeze: true,
                         callback: (r) => {
@@ -49,12 +50,13 @@ frappe.ui.form.on('Campaign', {
                     })
                 }
 
-                if(frm.doc.custom_campaign_based_on === "Last Purchased" && frm.doc.custom_last_purchased){
+                if(frm.doc.custom_campaign_based_on === "Last Purchased" ){
                     
                     frappe.call({
                         method: 'crm_application_plugin.crm_application_plugin.overrides.campaign.get_sales_details',
                         args: {
-                            'days': frm.doc.custom_last_purchased
+                            'from_date': frm.doc.custom_from_date,
+                            'to_date':frm.doc.custom_to_date
                         },
                         freeze: true,
                         callback: (r) => {
@@ -77,11 +79,12 @@ frappe.ui.form.on('Campaign', {
 
                 }
 
-                if(frm.doc.custom_campaign_based_on === "Last Contacted" && frm.doc.custom_last_contacted){
+                if(frm.doc.custom_campaign_based_on === "Last Contacted"){
                     frappe.call({
                         method: 'crm_application_plugin.crm_application_plugin.overrides.campaign.get_last_contacted',
                         args: {
-                            'day': frm.doc.custom_last_contacted
+                            'from_date': frm.doc.custom_from_date,
+                            'to_date':frm.doc.custom_to_date
                         },
                         freeze: true,
                         callback: (r) => {
