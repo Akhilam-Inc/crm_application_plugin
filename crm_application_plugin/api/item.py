@@ -50,7 +50,7 @@ def get_product_list():
         if frappe.local.form_dict.myboutique:
             having_condition = "HAVING my_boutique > 0"
         else:
-            having_condition = ""
+            having_condition = "HAVING my_boutique > 0 or other_boutique > 0"
         
         reserverd_warehouse = frappe.db.get_list("Warehouse",filters={"custom_is_reserved":1},fields=["name"],pluck="name")
         
