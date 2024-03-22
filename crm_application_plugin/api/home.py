@@ -43,13 +43,15 @@ def get_home_data():
         }, customer_counts))
         
     total_count = get_total_count_boutique()
+    whatsapp_message = frappe.db.get_single_value("Aetas Whats App Message","whatsapp_message")
      
     create_response(200 , "Home Data Fetched Successfully" , {
         "banners" : banners,
         "overviews" : customer_counts,
         "banner_duration":frappe.db.get_single_value("Aetas CRM Configuration","duration"),
         "total_my_boutique": total_count.get("total_my_boutique", 0),
-        "total_other_boutique": total_count.get("total_other_boutique", 0)
+        "total_other_boutique": total_count.get("total_other_boutique", 0),
+        "whatsapp_message":whatsapp_message if whatsapp_message else ""
     }) 
     
 def get_sales_person_herarchy(user,salesperson=None):
