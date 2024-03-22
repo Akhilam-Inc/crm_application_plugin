@@ -66,9 +66,9 @@ def get_product_list():
             (select IFNULL(actual_qty,0) from `tabBin` where item_code = i.item_code and warehouse = %(warehouse)s) as my_boutique,
             (select IFNULL(actual_qty,0) from `tabBin` where item_code = i.item_code and warehouse = %(reserved_warehouse)s) as my_reserved,
             (select IFNULL(sum(actual_qty),0) from `tabBin` where item_code = i.item_code and warehouse not in %(exception_warehouse)s) as other_boutique,
-            CONCAT('https://artoftimeindia.com/products/', i.custom_product_handle) as share_link
+            CONCAT('https://artoftimeindia.com/products/', i.product_handle) as share_link
             FROM `tabItem` i
-            where i.item_group = 'Watch' and i.custom_product_handle is not null
+            where i.item_group = 'Watch' and i.product_handle is not null
             {conditions} 
             GROUP BY i.item_code {having_condition}
             LIMIT %(offset)s,20
