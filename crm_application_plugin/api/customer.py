@@ -105,7 +105,7 @@ def get_unassigned_customer_list():
 		condition = ""
 		condition_params = {}
 		if search is not None and search != "":
-			condition += " AND c.name LIKE %(search)s or c.mobile_no LIKE %(search)s"
+			condition += " AND (c.name LIKE %(search)s) or (c.mobile_no LIKE %(search)s)"
 			condition_params['search'] = f"%{search}%"
 
 		user = frappe.session.user
