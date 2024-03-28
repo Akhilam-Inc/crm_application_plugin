@@ -67,8 +67,8 @@ def get_product_list():
             (select IFNULL(actual_qty,0) from `tabBin` where item_code = i.item_code and warehouse = %(reserved_warehouse)s) as my_reserved,
             (select IFNULL(sum(actual_qty),0) from `tabBin` where item_code = i.item_code and warehouse not in %(exception_warehouse)s) as other_boutique,
             CONCAT('https://artoftimeindia.com/products/', i.product_handle) as share_link
-            FROM `tabItem` i
-            where i.item_group = 'Watch' and i.product_handle is not null
+            FROM `tabItem` i inner join `tabEcommerce Item` ei on i.item_code = ei.erpnext_item_code
+            where i.item_group = 'Watch'
             {conditions} 
             GROUP BY i.item_code {having_condition}
             LIMIT %(offset)s,20
