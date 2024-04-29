@@ -8,7 +8,9 @@ def assign_customer_tier():
     try:
         for customer in customer_list:
             sales_of_customer = get_customer(customer['name'])
+            print(sales_of_customer)
             tier = get_applicable_slab(sales_of_customer)
+            print(tier)
             frappe.db.set_value("Customer",customer['name'],"custom_client_tiers",tier)
             set_inactive_customers()
             frappe.db.commit()
@@ -59,7 +61,7 @@ def get_applicable_slab(sales):
     """,as_dict = 1)
 
     for item in tier_slab:
-        if sales > item['min_purchase'] and sales < item['max_purchase']:
+        if sales >= item['min_purchase'] and sales <= item['max_purchase']:
             print(item['tier'])
             return item['tier']
 
