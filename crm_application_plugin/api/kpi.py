@@ -1,5 +1,6 @@
 import frappe
 from crm_application_plugin.api.utils import create_response
+from frappe.utils import get_first_day, get_last_day, today
 
 @frappe.whitelist()
 def target():
@@ -119,7 +120,48 @@ def botique_achvievement():
     create_response(200,"Success",response_data)
     return
     
+@frappe.whitelist()
+def boutique_achievement_by_cost_center():
+    employee = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "name")
+    if not employee:
+        create_response(406,"Employee not found")
+        return 
     
+    sales_person_botique = frappe.db.get_value("Sales Person", {"employee": employee}, "custom_botique")
+    if not sales_person_botique:
+        create_response(406,"Botique not found")
+        return
+    
+    cost_center = frappe.db.get_value("Boutique", sales_person_botique,"boutique_cost_center")
+    if not cost_center:
+        create_response(406,"cost center not found")
+        return
 
+    first_day_of_month = get_first_day(today())
+    last_day_of_month = get_last_day(today())
     
-    
+    boutique_achievement = frappe.db.sql("""
+        SELECT sii.cost_center, COALESCE(SUM(sii.amount), 0) as total_amount
+        FROM `tabSales Invoice Item` sii
+        INNER JOIN `tabSales Invoice` si ON si.name = sii.parent
+        WHERE 
+        si.docstatus = 1 AND sii.cost_center = %(cost_center)s
+        AND si.posting_date BETWEEN %(start_date)s AND %(end_date)s
+        GROUP BY sii.cost_center
+        """, {
+            "cost_center": cost_center,
+            "start_date": first_day_of_month,
+            "end_date": last_day_of_month
+        },
+        as_dict=1
+    )
+    total_amount = 0
+    if boutique_achievement:
+        total_amount = boutique_achievement[0].total_amount
+
+    final_data = {
+        "total_amount" :total_amount
+    }
+
+    create_response(200,"Success",final_data)
+    return

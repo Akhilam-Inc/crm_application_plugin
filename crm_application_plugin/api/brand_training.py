@@ -51,14 +51,14 @@ def brand_training_list(brand, subject, type):
             }
             brand_pdfs = frappe.db.sql("""
             select bp.title as name, bp.attach as file
-            from `tabBrand Pdfs` bp where bp.parent = "User Guide"
+            from `tabBrand Pdfs` bp where bp.parent = "User Guide" order by name
             """,as_dict=1)
 
             brand_info['pdfs'] = brand_pdfs or []
             
             brand_videos = frappe.db.sql("""
             select bv.title as name,IFNULL(bv.file_url,'') as file
-            from`tabBrand Videos` bv where bv.parent = "User Guide"
+            from`tabBrand Videos` bv where bv.parent = "User Guide" order by name
             """,as_dict=1)
             
             brand_info['videos'] = brand_videos or []
