@@ -151,7 +151,7 @@ fixtures = [
 # }
 
 scheduler_events = {
-    "weekly": [
+    "daily": [
 		"crm_application_plugin.scheduler_events.crm_events.assign_customer_tier",
         "crm_application_plugin.scheduler_events.crm_events.assign_sales_person"
 	],
