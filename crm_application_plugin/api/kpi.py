@@ -109,8 +109,10 @@ def botique_achvievement():
     botiue_sales_person_list = frappe.db.get_all("Sales Person", {"custom_botique": sales_person_botique}, "name",pluck="name")
     
     sales_target_achieved_for_current_month = get_achived(botiue_sales_person_list)
-    
-    achieved = sales_target_achieved_for_current_month[0]['sales'] if sales_target_achieved_for_current_month else 0
+    # achieved = sales_target_achieved_for_current_month[0]['sales'] if sales_target_achieved_for_current_month else 0
+
+    sales_target_achieved_for_current_month_by_cost_center = boutique_achievement_by_cost_center(sales_person_botique)
+    achieved = sales_target_achieved_for_current_month_by_cost_center if sales_target_achieved_for_current_month_by_cost_center else 0
     
     response_data = {
         "achvievement": achieved,
@@ -119,19 +121,9 @@ def botique_achvievement():
     }
     create_response(200,"Success",response_data)
     return
-    
-@frappe.whitelist()
-def boutique_achievement_by_cost_center():
-    employee = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "name")
-    if not employee:
-        create_response(406,"Employee not found")
-        return 
-    
-    sales_person_botique = frappe.db.get_value("Sales Person", {"employee": employee}, "custom_botique")
-    if not sales_person_botique:
-        create_response(406,"Botique not found")
-        return
-    
+
+def boutique_achievement_by_cost_center(sales_person_botique):
+        
     cost_center = frappe.db.get_value("Boutique", sales_person_botique,"boutique_cost_center")
     if not cost_center:
         create_response(406,"cost center not found")
@@ -159,9 +151,4 @@ def boutique_achievement_by_cost_center():
     if boutique_achievement:
         total_amount = boutique_achievement[0].total_amount
 
-    final_data = {
-        "total_amount" :total_amount
-    }
-
-    create_response(200,"Success",final_data)
-    return
+    return total_amount
