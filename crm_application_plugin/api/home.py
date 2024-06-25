@@ -113,11 +113,11 @@ def get_total_count_boutique():
             exception_warehouse.append(reserverd_warehouse)
         
         total_my_botique = frappe.db.sql("""
-        select sum(bn.actual_qty) as total_my_qty from `tabBin` bn inner join `tabItem` it on bn.item_code = it.name where warehouse = %(warehouse)s and it.item_group = 'Watch' and it.product_handle is not null group by it.item_group                                  
+        select sum(bn.actual_qty) as total_my_qty from `tabBin` bn inner join `tabItem` it on bn.item_code = it.name where warehouse = %(warehouse)s and it.item_group = 'Watch' group by it.item_group                                  
         """,{"warehouse":warehouse_name},as_dict=1)
         
         total_other_boutique = frappe.db.sql("""
-        select sum(bn.actual_qty) as total_other from `tabBin` bn inner join `tabItem` it on bn.item_code = it.name where warehouse not in %(exception_warehouse)s and it.item_group = 'Watch' and it.product_handle is not null group by it.item_group
+        select sum(bn.actual_qty) as total_other from `tabBin` bn inner join `tabItem` it on bn.item_code = it.name where warehouse not in %(exception_warehouse)s and it.item_group = 'Watch' group by it.item_group
         """,{"exception_warehouse":exception_warehouse},as_dict=1)
 
         return {
