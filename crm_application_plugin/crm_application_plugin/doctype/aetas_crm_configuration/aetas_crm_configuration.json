@@ -9,7 +9,8 @@
  "field_order": [
   "set_client_tiers_based_on_days",
   "duration",
-  "assign_customer_tier"
+  "assign_customer_tier",
+  "homes_images"
  ],
  "fields": [
   {
@@ -26,12 +27,18 @@
    "fieldname": "assign_customer_tier",
    "fieldtype": "Button",
    "label": "Assign Customer Tier"
+  },
+  {
+   "fieldname": "homes_images",
+   "fieldtype": "Table",
+   "label": "Homes Images",
+   "options": "Home page banner mobile"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-03-18 15:15:04.555502",
+ "modified": "2024-12-10 15:17:11.396518",
  "modified_by": "Administrator",
  "module": "Crm Application Plugin",
  "name": "Aetas CRM Configuration",
