@@ -8,11 +8,13 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "boutique_abr",
   "boutique_name",
   "boutique_warehouse",
   "boutique_address",
   "boutique_phone_no",
-  "boutique_email_id"
+  "boutique_email_id",
+  "boutique_cost_center"
  ],
  "fields": [
   {
@@ -43,11 +45,22 @@
    "fieldtype": "Data",
    "label": "Boutique Email Id",
    "options": "Email"
+  },
+  {
+   "fieldname": "boutique_abr",
+   "fieldtype": "Data",
+   "label": "Boutique ABR"
+  },
+  {
+   "fieldname": "boutique_cost_center",
+   "fieldtype": "Link",
+   "label": "Boutique Cost Center",
+   "options": "Cost Center"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-10-30 17:45:16.620823",
+ "modified": "2025-01-03 19:10:53.322340",
  "modified_by": "Administrator",
  "module": "Crm Application Plugin",
  "name": "Boutique",
