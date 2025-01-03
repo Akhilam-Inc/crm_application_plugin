@@ -16,7 +16,7 @@ def get_product_list():
     try:
         min_price = frappe.local.form_dict.min_price
         max_price = frappe.local.form_dict.max_price
-        brand = frappe.local.form_dict.brand
+        brand_string = frappe.local.form_dict.brand
         search = frappe.local.form_dict.search or ""
         offset = int(frappe.local.form_dict.offset) if frappe.local.form_dict.offset else 0
 
@@ -26,9 +26,10 @@ def get_product_list():
         
         if min_price and max_price:
             condition += " and i.shopify_selling_rate between %(min_price)s and %(max_price)s"
-            
-        if brand:
-            condition += " and i.brand = %(brand)s"
+        
+        if brand_string:
+            brand_array = brand_string.split(",")
+            condition += " and i.brand in %(brand)s"
                
         
         employee = frappe.get_value("Employee", {"user_id": frappe.session.user}, "name")
@@ -49,7 +50,7 @@ def get_product_list():
         if frappe.local.form_dict.myboutique:
             having_condition = "HAVING my_boutique > 0"
         else:
-            having_condition = ""
+            having_condition = "HAVING (my_boutique > 0) or (other_boutique > 0)"
         
         reserverd_warehouse = frappe.db.get_list("Warehouse",filters={"custom_is_reserved":1},fields=["name"],pluck="name")
         
@@ -57,17 +58,17 @@ def get_product_list():
         
         exception_warehouse = reserverd_warehouse + disabled_warehouse
         
-        exception_warehouse.extend(disabled_warehouse)
+        exception_warehouse.append(warehouse_name)
 
         
         item_details = frappe.db.sql("""
-            SELECT i.item_code, i.item_name, IFNULL(i.image,'') as image, i.shopify_selling_rate as price,
+            SELECT i.item_code,i.brand, i.item_name, IFNULL(i.image,'') as image, i.shopify_selling_rate as price,
             (select IFNULL(actual_qty,0) from `tabBin` where item_code = i.item_code and warehouse = %(warehouse)s) as my_boutique,
             (select IFNULL(actual_qty,0) from `tabBin` where item_code = i.item_code and warehouse = %(reserved_warehouse)s) as my_reserved,
             (select IFNULL(sum(actual_qty),0) from `tabBin` where item_code = i.item_code and warehouse not in %(exception_warehouse)s) as other_boutique,
             CONCAT('https://artoftimeindia.com/products/', i.product_handle) as share_link
-            FROM `tabItem` i
-            where i.item_group = 'Watch' and i.product_handle is not null
+            FROM `tabItem` i inner join `tabEcommerce Item` ei on i.item_code = ei.erpnext_item_code
+            where i.item_group = 'Watch'
             {conditions} 
             GROUP BY i.item_code {having_condition}
             LIMIT %(offset)s,20
@@ -79,7 +80,7 @@ def get_product_list():
                 "exception_warehouse":exception_warehouse,
                 "min_price":min_price,
                 "max_price":max_price,
-                "brand":brand
+                "brand":brand_array if brand_string else [] 
         },as_dict=1)
 
         create_response(200, "Item data Fetched Successfully!", item_details)

@@ -1,5 +1,6 @@
 import frappe
 from crm_application_plugin.api.utils import create_response
+from frappe.utils import get_first_day, get_last_day, today
 
 @frappe.whitelist()
 def target():
@@ -61,7 +62,7 @@ def get_target(sales_person_list, month, fiscal_year):
 
 def get_achived(sales_person_list):
     sales_target_achieved_for_current_month = frappe.db.sql("""
-    select sum(sii.amount) as sales,count(si.name) as si_count,sum(sii.qty) as itm_qty,sum(sii.qty)/count(si.name) as unit_per_trans,sum(sii.amount)/count(si.name) as avg_amt_per_invoice  from `tabSales Invoice Item` sii inner join `tabSales Invoice` si on sii.parent = si.name where si.docstatus = 1 and sii.custom_sales_person IN %(sales_person_list)s and month(si.posting_date) = month(now()) and year(si.posting_date) = year(now()) group by month(si.posting_date),year(si.posting_date)""",{ "sales_person_list": sales_person_list},as_dict=1)
+    select sum(sii.amount) as sales,count(si.name) as si_count,sum(sii.qty) as itm_qty,sum(sii.qty)/count(si.name) as unit_per_trans,sum(sii.amount)/count(si.name) as avg_amt_per_invoice  from `tabSales Invoice Item` sii inner join `tabSales Invoice` si on sii.parent = si.name where si.docstatus = 1 and sii.sales_person IN %(sales_person_list)s and month(si.posting_date) = month(now()) and year(si.posting_date) = year(now()) group by month(si.posting_date),year(si.posting_date)""",{ "sales_person_list": sales_person_list},as_dict=1)
     
     return sales_target_achieved_for_current_month
 
@@ -108,8 +109,10 @@ def botique_achvievement():
     botiue_sales_person_list = frappe.db.get_all("Sales Person", {"custom_botique": sales_person_botique}, "name",pluck="name")
     
     sales_target_achieved_for_current_month = get_achived(botiue_sales_person_list)
-    
-    achieved = sales_target_achieved_for_current_month[0]['sales'] if sales_target_achieved_for_current_month else 0
+    # achieved = sales_target_achieved_for_current_month[0]['sales'] if sales_target_achieved_for_current_month else 0
+
+    sales_target_achieved_for_current_month_by_cost_center = boutique_achievement_by_cost_center(sales_person_botique)
+    achieved = sales_target_achieved_for_current_month_by_cost_center if sales_target_achieved_for_current_month_by_cost_center else 0
     
     response_data = {
         "achvievement": achieved,
@@ -118,8 +121,34 @@ def botique_achvievement():
     }
     create_response(200,"Success",response_data)
     return
-    
-    
 
+def boutique_achievement_by_cost_center(sales_person_botique):
+        
+    cost_center = frappe.db.get_value("Boutique", sales_person_botique,"boutique_cost_center")
+    if not cost_center:
+        create_response(406,"cost center not found")
+        return
+
+    first_day_of_month = get_first_day(today())
+    last_day_of_month = get_last_day(today())
     
-    
+    boutique_achievement = frappe.db.sql("""
+        SELECT sii.cost_center, COALESCE(SUM(sii.amount), 0) as total_amount
+        FROM `tabSales Invoice Item` sii
+        INNER JOIN `tabSales Invoice` si ON si.name = sii.parent
+        WHERE 
+        si.docstatus = 1 AND sii.cost_center = %(cost_center)s
+        AND si.posting_date BETWEEN %(start_date)s AND %(end_date)s
+        GROUP BY sii.cost_center
+        """, {
+            "cost_center": cost_center,
+            "start_date": first_day_of_month,
+            "end_date": last_day_of_month
+        },
+        as_dict=1
+    )
+    total_amount = 0
+    if boutique_achievement:
+        total_amount = boutique_achievement[0].total_amount
+
+    return total_amount

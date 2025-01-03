@@ -1,5 +1,6 @@
 import frappe
 from crm_application_plugin.api.utils import create_response
+from crm_application_plugin.api.home import get_sales_person_herarchy
 
 
 
@@ -20,9 +21,17 @@ def create_campaign(campaign_name,start_date,end_date):
 
 @frappe.whitelist()
 def campaign_list():
+    sales_persons = get_sales_person_herarchy(frappe.session.user)
     campaign_list = frappe.db.sql("""
-    select count(td.custom_customer) as customer_count,cp.name as campaign,cp.custom_start_date,cp.custom_end_date from `tabToDo` td inner join `tabCampaign` cp on td.reference_name = cp.name where cp.custom_enable = 1 group by cp.name        
-    """,as_dict=1)
+    select count(td.custom_customer) as customer_count,cp.name as campaign,cp.custom_start_date,cp.custom_end_date,cp.description 
+    from `tabToDo` td inner join `tabCampaign` cp 
+    on td.reference_name = cp.name 
+    inner join `tabCustomer` cu
+    on td.custom_customer = cu.name
+    where cp.custom_enable = 1 and cu.custom_sales_person in %(sales_persons)s
+    group by cp.name        
+    """,{"sales_persons": sales_persons},
+    as_dict=1)
 
     create_response(200,"List of Campaign fetched successfully",campaign_list)
 

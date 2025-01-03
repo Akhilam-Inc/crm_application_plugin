@@ -54,14 +54,15 @@ fixtures = [
 		[
 			"name", "in", [
 				"Customer-custom_date_of_birth","Customer-custom_anniversary_date","Campaign-custom_start_date","Campaign-custom_end_date","Campaign-custom_column_break_tno0a",
-                "Campaign-custom_campaign_based_on","Campaign-custom_customer_type","Campaign-custom_last_purchased","Campaign-custom_last_contacted","Campaign-custom_customer_campaign_list_",
+                "Campaign-custom_campaign_based_on","Campaign-custom_last_purchased","Campaign-custom_last_contacted","Campaign-custom_customer_campaign_list_",
                 "Customer-custom_boutique","ToDo-custom_customer","Item-custom_product_details","Item-custom_reference","Item-custom_collection","Item-custom_dial_size","Item-custom_dial_shape",
                 "Item-custom_case_material","Item-custom_column_break_dhzcs","Item-custom_diamonds","Item-custom_strap_bracelet","Item-custom_gender","Item-custom_movement","Item-custom_water_resistance",
                 "Item-custom_brand_warranty","Campaign-custom_client_tiers","Customer-custom_sales_person","Customer-custom_client_tiers","Sales Person-custom_botique","Brand-custom_brand_logo",
                 "Sales Order Item-custom_sales_person","Sales Invoice Item-custom_sales_person","Item-custom_slider_images","Campaign-custom_enable",
                 "Warehouse-custom_reserved_warehouse",
                 "Warehouse-custom_is_reserved",
-                "Warehouse-custom_is_disable_in_mobile"
+                "Warehouse-custom_is_disable_in_mobile",
+                "Campaign-custom_sales_person","Campaign-custom_from_date","Campaign-custom_to_date"
 			]
 		]
 	]},
@@ -150,7 +151,7 @@ fixtures = [
 # }
 
 scheduler_events = {
-    "weekly": [
+    "daily": [
 		"crm_application_plugin.scheduler_events.crm_events.assign_customer_tier",
         "crm_application_plugin.scheduler_events.crm_events.assign_sales_person"
 	],

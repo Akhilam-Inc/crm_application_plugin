@@ -36,46 +36,92 @@ def create_todo(self):
         frappe.msgprint("An Error Occurred while Creating ToDo From Campaign!")
 
 @frappe.whitelist()
-def get_customer_by_tiers(client_tier):
+def get_customer_by_tiers(client_tier,sales_person):
     client_list = frappe.db.sql("""
-    select name,custom_sales_person,custom_client_tiers from `tabCustomer` where custom_client_tiers = %(tiers)s    
+    select name,custom_sales_person,custom_client_tiers from `tabCustomer` where custom_client_tiers = %(tiers)s and custom_sales_person = %(sales_person)s   
     """,({
-        'tiers' : client_tier
+        'tiers' : client_tier,
+        'sales_person':sales_person
     }),as_dict = 1)
 
     return client_list
 
-@frappe.whitelist()
-def get_sales_details(days, date = None):
+# @frappe.whitelist()
+# def get_sales_details(days, date = None):
 
-    if date is None:
-        date = getdate(today())
+#     if date is None:
+#         date = getdate(today())
     
-    print(date)
+#     print(date)
 
-    return frappe.db.sql(
+#     return frappe.db.sql(
+#         """SELECT
+#             cust.name,
+#             cust.custom_client_tiers,
+#             cust.custom_sales_person,
+#             max(so.posting_date) as 'last_order_date',
+#             DATEDIFF(%(date)s, max(so.posting_date)) as 'days_since_last_order'
+#         FROM `tabCustomer` cust
+#            LEFT JOIN `tabSales Invoice` so ON cust.name = so.customer
+#         WHERE 
+#             so.docstatus = 1
+#         GROUP BY so.customer
+#         HAVING days_since_last_order >= {days}
+#         ORDER BY days_since_last_order DESC""".format(
+#         days = days),{
+#             "date" : date
+#         },
+#         as_dict=1
+#     )
+
+@frappe.whitelist()
+def get_sales_details(from_date,to_date):
+
+    data = frappe.db.sql(
         """SELECT
             cust.name,
             cust.custom_client_tiers,
             cust.custom_sales_person,
-            max(so.posting_date) as 'last_order_date',
-            DATEDIFF(%(date)s, max(so.posting_date)) as 'days_since_last_order'
+            max(so.posting_date) as last_order_date
         FROM `tabCustomer` cust
-           LEFT JOIN `tabSales Invoice` so ON cust.name = so.customer
+        LEFT JOIN `tabSales Invoice` so ON cust.name = so.customer
         WHERE 
             so.docstatus = 1
+            AND so.posting_date BETWEEN %(from_date)s AND %(to_date)s
         GROUP BY so.customer
-        HAVING days_since_last_order >= {days}
-        ORDER BY days_since_last_order DESC""".format(
-        days = days),{
-            "date" : date
+        """,
+        {
+            "from_date": from_date,
+            "to_date": to_date
         },
         as_dict=1
     )
+    if not data:
+        frappe.throw("No data found for the specified criteria")
+    return data
+
+# @frappe.whitelist()
+# def get_last_contacted(day):
+#     return  frappe.db.sql("""
+#     SELECT c.name,c.custom_sales_person,c.custom_client_tiers
+#     FROM `tabCustomer` c
+#     LEFT JOIN (
+#         SELECT customer, MAX(contacted_date) AS last_contacted
+#         FROM (
+#             SELECT message_to as customer, sent_on as contacted_date FROM `tabAetas WhatsApp Log`
+#             UNION ALL
+#             SELECT call_to as customer, call_initiated_at as contacted_date FROM `tabAetas Call Log`
+#         ) AS combined_logs
+#         GROUP BY customer
+#     ) AS contact_logs ON c.name = contact_logs.customer
+#     WHERE contact_logs.last_contacted IS NULL OR contact_logs.last_contacted < CURRENT_DATE - INTERVAL %s DAY;
+    
+#     """,day,as_dict=1)
 
 @frappe.whitelist()
-def get_last_contacted(day):
-    return  frappe.db.sql("""
+def get_last_contacted(from_date,to_date):
+
+    data = frappe.db.sql("""
     SELECT c.name,c.custom_sales_person,c.custom_client_tiers
     FROM `tabCustomer` c
     LEFT JOIN (
@@ -87,6 +133,12 @@ def get_last_contacted(day):
         ) AS combined_logs
         GROUP BY customer
     ) AS contact_logs ON c.name = contact_logs.customer
-    WHERE contact_logs.last_contacted IS NULL OR contact_logs.last_contacted < CURRENT_DATE - INTERVAL %s DAY;
+    WHERE (contact_logs.last_contacted IS NULL OR contact_logs.last_contacted < CURRENT_DATE)
+    AND contact_logs.last_contacted BETWEEN %s AND %s;
     
-    """,day,as_dict=1)
+    """,(from_date, to_date), as_dict=1)
+    if not data:
+        frappe.throw("No data found for the specified criteria")
+    return data
+
+    

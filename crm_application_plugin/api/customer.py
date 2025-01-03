@@ -20,7 +20,7 @@ def get_assigned_customer_list(salesperson=None):
 
 		condition = ("")
 		if search is not None and search != "":
-			condition += "and c.customer_name like %(search)s"
+			condition += "and (c.customer_name like %(search)s) or (c.mobile_no like %(search)s)"
 
 		if tier is not None and tier != "":
 			condition += "and c.custom_client_tiers = %(custom_client_tiers)s"
@@ -105,7 +105,7 @@ def get_unassigned_customer_list():
 		condition = ""
 		condition_params = {}
 		if search is not None and search != "":
-			condition += " AND c.name LIKE %(search)s"
+			condition += " AND (c.name LIKE %(search)s) or (c.mobile_no LIKE %(search)s)"
 			condition_params['search'] = f"%{search}%"
 
 		user = frappe.session.user
@@ -154,7 +154,7 @@ def get_past_purchase_customer():
 		# Get Sales of this customer by based on customer parameter
 
 		customer_sales_data = frappe.db.sql("""
-		select si.posting_date,sii.item_name,sii.rate as price, i.image as file_url
+		select si.posting_date,sii.item_name,sii.rate as price, i.image as image
 		from`tabSales Invoice` si
 		Inner Join`tabSales Invoice Item` sii on si.name = sii.parent
 		LEFT JOIN `tabItem` i ON sii.item_code = i.item_code
@@ -256,7 +256,7 @@ def get_customer_detail(customer_name):
 
 		customer_detail[0]['primary_address'] = get_address_display(customer_detail[0]['customer_primary_address'])
   
-		active_campaigns = frappe.db.sql("""select td.name,td.reference_name,td.reference_type,td.custom_customer,td.status,cp.custom_start_date,custom_end_date from `tabToDo` td inner join `tabCampaign` cp on td.reference_name = cp.name where td.custom_customer = %(customer)s and td.reference_type = 'Campaign' and cp.custom_enable = 1 and td.status = 'Open' """,{'customer':customer_name},as_dict=1)
+		active_campaigns = frappe.db.sql("""select td.name,td.reference_name,td.reference_type,td.custom_customer,td.status,cp.custom_start_date,custom_end_date,cp.description from `tabToDo` td inner join `tabCampaign` cp on td.reference_name = cp.name where td.custom_customer = %(customer)s and td.reference_type = 'Campaign' and cp.custom_enable = 1 and td.status = 'Open' """,{'customer':customer_name},as_dict=1)
   
 		customer_detail[0]['active_campaigns'] = active_campaigns
 

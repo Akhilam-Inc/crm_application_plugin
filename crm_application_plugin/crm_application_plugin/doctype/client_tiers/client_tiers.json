@@ -8,12 +8,11 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "tier_index",
   "tier",
   "min_purchase",
   "column_break_g9lkk",
   "max_purchase",
-  "is_public"
+  "inactive_customer_tier"
  ],
  "fields": [
   {
@@ -40,19 +39,14 @@
   },
   {
    "default": "0",
-   "fieldname": "is_public",
+   "fieldname": "inactive_customer_tier",
    "fieldtype": "Check",
-   "label": "Is Public"
-  },
-  {
-   "fieldname": "tier_index",
-   "fieldtype": "Int",
-   "label": "Index"
+   "label": "Inactive customer tier"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-01-26 11:32:20.122371",
+ "modified": "2024-03-18 16:03:28.893206",
  "modified_by": "Administrator",
  "module": "Crm Application Plugin",
  "name": "Client Tiers",
