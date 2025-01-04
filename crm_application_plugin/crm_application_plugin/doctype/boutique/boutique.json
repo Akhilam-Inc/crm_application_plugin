@@ -47,14 +47,11 @@
    "options": "Email"
   },
   {
-<<<<<<< HEAD
    "fieldname": "boutique_abr",
    "fieldtype": "Data",
    "label": "Boutique ABR"
   },
   {
-=======
->>>>>>> 35fa9a9f397d01b9d47af987bb605f479d42f77d
    "fieldname": "boutique_cost_center",
    "fieldtype": "Link",
    "label": "Boutique Cost Center",
@@ -63,11 +60,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
-<<<<<<< HEAD
  "modified": "2025-01-03 19:10:53.322340",
-=======
- "modified": "2024-06-13 17:29:37.471122",
->>>>>>> 35fa9a9f397d01b9d47af987bb605f479d42f77d
  "modified_by": "Administrator",
  "module": "Crm Application Plugin",
  "name": "Boutique",
