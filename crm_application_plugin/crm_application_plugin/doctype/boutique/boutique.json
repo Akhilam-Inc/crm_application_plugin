@@ -12,6 +12,8 @@
   "boutique_name",
   "boutique_warehouse",
   "boutique_address",
+  "boutique_location",
+  "boutique_location_display",
   "boutique_phone_no",
   "boutique_email_id",
   "boutique_cost_center"
@@ -56,11 +58,23 @@
    "fieldtype": "Link",
    "label": "Boutique Cost Center",
    "options": "Cost Center"
+  },
+  {
+   "fieldname": "boutique_location",
+   "fieldtype": "Link",
+   "label": "Boutique Location",
+   "options": "Address"
+  },
+  {
+   "fieldname": "boutique_location_display",
+   "fieldtype": "Text",
+   "label": "Boutique Location Display",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-03 19:10:53.322340",
+ "modified": "2025-02-04 12:25:45.839344",
  "modified_by": "Administrator",
  "module": "Crm Application Plugin",
  "name": "Boutique",
