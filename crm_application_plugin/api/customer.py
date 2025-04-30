@@ -175,11 +175,16 @@ def create_customer(customer_name,mobile_number,email_address,address_line1,addr
 		create_response(422, "Invalid request data", "Please provide all mandatory field data.")
 		return
 	
+	if frappe.db.exists("Customer", {"customer_name": customer_name, "custom_contact": mobile_number}):
+		create_response(409, "This customer name and contact combination already exists.")
+		return
+	
 	try:
 		customer_obj = frappe.get_doc({
 			"doctype": "Customer",
 			"customer_name": customer_name,
 			"salutation": salutation or '',
+			"custom_contact":mobile_number,
 			"customer_type": "Individual",
 			"territory": "All Territories",
 			"customer_group": "Individual",
@@ -187,7 +192,8 @@ def create_customer(customer_name,mobile_number,email_address,address_line1,addr
 			"custom_anniversary_date": anniversary_date or '',
 			"boutique": boutique or '',
 			"custom_sales_person": sales_person or '',
-			"custom_source":source or ''
+			"custom_source":source or '',
+			"custom_custom_name": customer_name+ " - " +mobile_number
 		})
 
 		customer_doc = customer_obj.insert(ignore_permissions=True)
@@ -383,4 +389,25 @@ def get_all_customer_list():
 
 	except Exception as e:
 		create_response(406, 'Customer List Fetched Failed!', str(e))
+		return
+
+
+@frappe.whitelist()
+def get_lead_source():
+	try:
+		search = frappe.local.form_dict.get("search", "") or ""
+		offset = int(frappe.local.form_dict.offset) if frappe.local.form_dict.offset else 0
+
+		condition = "WHERE name LIKE %(search)s" if search else ""
+		lead_source_list = frappe.db.sql("""
+			SELECT name 
+			FROM `tabLead Source`
+			{conditions}
+			LIMIT %(offset)s, 20
+		""".format(conditions=condition), {"search": f"%{search}%", "offset": offset}, as_dict=True)
+
+		create_response(200, "Lead Source List Fetched.", lead_source_list)
+		return
+	except Exception as e:
+		create_response(406, "Lead Source List Fetch Failed!", str(e))
 		return
