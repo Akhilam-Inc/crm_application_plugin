@@ -167,7 +167,7 @@ def get_product_details_from_shopify(item,meta=0):
 
 def get_request(url, headers):
     try:
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers,verify=False)
         response.raise_for_status()
 
     except RequestException as err:
