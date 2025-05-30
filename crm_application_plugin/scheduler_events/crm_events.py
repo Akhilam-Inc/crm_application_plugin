@@ -82,7 +82,12 @@ def assign_sales_person():
     
     
     for customer, sales_person in output.items():
-        frappe.db.set_value("Customer",customer,"custom_sales_person",sales_person)
+        is_enabled= frappe.db.get_value("Sales Person", sales_person, "enabled")
+        if is_enabled:
+            frappe.db.set_value("Customer",customer,"custom_sales_person",sales_person)
+        
+    
+    frappe.db.commit()
     
 
 def map_customer_to_salesperson_optimized(sales_data):
