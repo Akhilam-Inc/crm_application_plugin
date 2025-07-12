@@ -105,7 +105,7 @@ def get_unassigned_customer_list():
 		condition = ""
 		condition_params = {}
 		if search is not None and search != "":
-			condition += " AND (c.name LIKE %(search)s) or (c.mobile_no LIKE %(search)s)"
+			condition += " AND (c.customer_name LIKE %(search)s) or (c.mobile_no LIKE %(search)s)"
 			condition_params['search'] = f"%{search}%"
 
 		user = frappe.session.user
@@ -120,7 +120,7 @@ def get_unassigned_customer_list():
 			return
 
 		sql_query = f"""
-			SELECT c.name, c.mobile_no, c.custom_sales_person
+			SELECT c.name, c.customer_name, c.mobile_no, c.custom_sales_person
 			FROM `tabCustomer` c
 			WHERE (c.custom_sales_person != %(sales_person)s OR c.custom_sales_person IS NULL) {condition}
 			LIMIT %(offset)s, %(limit)s
