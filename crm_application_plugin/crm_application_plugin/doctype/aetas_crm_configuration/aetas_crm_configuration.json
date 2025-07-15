@@ -10,6 +10,9 @@
   "set_client_tiers_based_on_days",
   "duration",
   "assign_customer_tier",
+  "column_break_q3m5c",
+  "last_customer_tier_sync",
+  "section_break_lxhhr",
   "banner_image"
  ],
  "fields": [
@@ -26,19 +29,35 @@
   {
    "fieldname": "assign_customer_tier",
    "fieldtype": "Button",
-   "label": "Assign Customer Tier"
+   "hidden": 1,
+   "label": "Assign Customer Tier",
+   "read_only": 1
   },
   {
    "fieldname": "banner_image",
    "fieldtype": "Table",
    "label": "Banner Image",
    "options": "Home page banner mobile"
+  },
+  {
+   "fieldname": "column_break_q3m5c",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "last_customer_tier_sync",
+   "fieldtype": "Data",
+   "label": "Last Customer Tier Sync",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_lxhhr",
+   "fieldtype": "Section Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-12-10 16:09:06.385140",
+ "modified": "2025-07-15 12:16:37.306725",
  "modified_by": "Administrator",
  "module": "Crm Application Plugin",
  "name": "Aetas CRM Configuration",
