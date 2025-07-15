@@ -101,7 +101,6 @@ def sync_customer_tiers_scheduler():
             if not updated_customers:
                 frappe.log_error("No customers with updated invoices found since last sync.", "Customer Tier Sync Info")
                 frappe.db.set_value("Aetas CRM Configuration", None, "last_customer_tier_sync", now())
-                frappe.db.commit()
                 return
             
             for i in range(0, len(updated_customers), batch_size):
@@ -115,7 +114,6 @@ def sync_customer_tiers_scheduler():
 
         # ✅ Always update sync time
         frappe.db.set_value("Aetas CRM Configuration", None, "last_customer_tier_sync", now())
-        frappe.db.commit()
 
     except Exception as e:
         frappe.log_error(message=frappe.get_traceback(), title="Customer Tier Sync Scheduler Error")
@@ -130,7 +128,6 @@ def assign_customer_tier_batch(customers: list):
                 frappe.db.set_value("Customer", customer, "custom_client_tiers", tier)
 
         set_inactive_customers()
-        frappe.db.commit()
     except Exception as e:
         frappe.log_error(message=frappe.get_traceback(), title="Assign Tier Batch Error")
 
@@ -208,9 +205,6 @@ def assign_sales_person():
         is_enabled= frappe.db.get_value("Sales Person", sales_person, "enabled")
         if is_enabled:
             frappe.db.set_value("Customer",customer,"custom_sales_person",sales_person)
-        
-    
-    frappe.db.commit()
     
 
 def map_customer_to_salesperson_optimized(sales_data):
