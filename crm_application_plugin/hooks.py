@@ -152,9 +152,14 @@ fixtures = [
 
 scheduler_events = {
     "daily": [
-		"crm_application_plugin.scheduler_events.crm_events.assign_customer_tier",
+		# "crm_application_plugin.scheduler_events.crm_events.assign_customer_tier",
         "crm_application_plugin.scheduler_events.crm_events.assign_sales_person"
 	],
+    "cron": {
+        "0 1 * * *": [
+            "crm_application_plugin.scheduler_events.crm_events.sync_customer_tiers_scheduler"
+        ]
+    }
 }
 # Scheduled Tasks
 # ---------------
