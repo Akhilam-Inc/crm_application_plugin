@@ -127,7 +127,6 @@ def assign_customer_tier_batch(customers: list):
             if tier:
                 frappe.db.set_value("Customer", customer, "custom_client_tiers", tier)
 
-        set_inactive_customers()
     except Exception as e:
         frappe.log_error(message=frappe.get_traceback(), title="Assign Tier Batch Error")
 
@@ -159,32 +158,43 @@ def get_applicable_slab(sales):
     return None
 
 def set_inactive_customers():
-    days = frappe.db.get_single_value("Aetas CRM Configuration", "set_client_tiers_based_on_days") or 730
-    last_sales_date = add_to_date(frappe.utils.today(), days=-days)
+    try:
+        days = frappe.db.get_single_value("Aetas CRM Configuration", "set_client_tiers_based_on_days") or 730
+        last_sales_date = add_to_date(frappe.utils.today(), days=-days)
 
-    inactive_customers = frappe.db.sql("""
-        SELECT name 
-        FROM `tabCustomer` 
-        WHERE name NOT IN (
-            SELECT DISTINCT customer 
-            FROM `tabSales Invoice` 
-            WHERE docstatus = 1 AND posting_date > %(last_sales_date)s
-        )
-        AND EXISTS (
-            SELECT 1 
-            FROM `tabSales Invoice` 
-            WHERE customer = `tabCustomer`.name 
-            AND docstatus = 1 
-            AND posting_date <= %(last_sales_date)s
-        )
-    """, {
-        "last_sales_date": last_sales_date
-    }, as_list=1)
+        inactive_customers = frappe.db.sql("""
+            SELECT name 
+            FROM `tabCustomer` 
+            WHERE name NOT IN (
+                SELECT DISTINCT customer 
+                FROM `tabSales Invoice` 
+                WHERE docstatus = 1 AND posting_date > %(last_sales_date)s
+            )
+            AND EXISTS (
+                SELECT 1 
+                FROM `tabSales Invoice` 
+                WHERE customer = `tabCustomer`.name 
+                AND docstatus = 1 
+                AND posting_date <= %(last_sales_date)s
+            )
+        """, {
+            "last_sales_date": last_sales_date
+        }, as_list=1)
 
-    inactive_tier = frappe.db.get_value("Client Tiers", {"inactive_customer_tier": 1}, "name")
+        customer_names = [c[0] for c in inactive_customers]
+        batch_size = 200
 
-    for customer in inactive_customers:
-        frappe.db.set_value("Customer", customer[0], "custom_client_tiers", inactive_tier)
+        for i in range(0, len(customer_names), batch_size):
+            batch = customer_names[i:i + batch_size]
+            frappe.enqueue(
+                "crm_application_plugin.scheduler_events.crm_events.set_inactive_customers_batch",
+                customers=batch,
+                queue="long",
+                now=False
+            )
+    except Exception as e:
+        frappe.log_error("Set Inactive Customer Issue",frappe.get_traceback())
+
 
 
 
