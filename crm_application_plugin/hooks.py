@@ -158,6 +158,9 @@ scheduler_events = {
     "cron": {
         "0 1 * * *": [
             "crm_application_plugin.scheduler_events.crm_events.sync_customer_tiers_scheduler"
+        ],
+        "0 2 * * *": [
+            "crm_application_plugin.scheduler_events.crm_events.set_inactive_customers"
         ]
     }
 }
