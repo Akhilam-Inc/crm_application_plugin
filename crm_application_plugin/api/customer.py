@@ -20,7 +20,7 @@ def get_assigned_customer_list(salesperson=None):
 
 		condition = ("")
 		if search is not None and search != "":
-			condition += "and (c.customer_name like %(search)s) or (c.contact_no like %(search)s) or (c.custom_contact like %(search)s)"
+			condition += "and ((c.customer_name like %(search)s) or (c.contact_no like %(search)s) or (c.custom_contact like %(search)s)) "
 
 		if tier is not None and tier != "":
 			condition += "and c.custom_client_tiers = %(custom_client_tiers)s"
@@ -105,7 +105,7 @@ def get_unassigned_customer_list():
 		condition = ""
 		condition_params = {}
 		if search is not None and search != "":
-			condition += " AND (c.customer_name LIKE %(search)s) or (c.contact_no LIKE %(search)s) or (c.custom_contact LIKE %(search)s"
+			condition += " AND ((c.customer_name LIKE %(search)s) or (c.contact_no LIKE %(search)s) or (c.custom_contact LIKE %(search)s))"
 			condition_params['search'] = f"%{search}%"
 
 		user = frappe.session.user
