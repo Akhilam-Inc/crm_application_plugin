@@ -20,7 +20,7 @@ def get_assigned_customer_list(salesperson=None):
 
 		condition = ("")
 		if search is not None and search != "":
-			condition += "and (c.customer_name like %(search)s) or (c.mobile_no like %(search)s)"
+			condition += "and (c.customer_name like %(search)s) or (c.contact_no like %(search)s) or (c.custom_contact like %(search)s)"
 
 		if tier is not None and tier != "":
 			condition += "and c.custom_client_tiers = %(custom_client_tiers)s"
@@ -41,7 +41,7 @@ def get_assigned_customer_list(salesperson=None):
 		if tier not in public_tiers:
 
 			customer_data = frappe.db.sql("""
-				SELECT c.name, c.customer_name, c.custom_sales_person, c.mobile_no, c.email_id,c.custom_client_tiers,
+				SELECT c.name, c.customer_name, c.custom_sales_person, COALESCE(c.custom_contact, c.contact_no) AS mobile_no, c.email_id,c.custom_client_tiers,
 				(SELECT MAX(si.posting_date) FROM `tabSales Invoice` si WHERE si.customer = c.customer_name) AS last_purchase_date
 				FROM `tabCustomer` c
 				WHERE c.custom_sales_person in %(sales_person)s {conditions}  LIMIT %(offset)s,20
@@ -53,7 +53,7 @@ def get_assigned_customer_list(salesperson=None):
 			}, as_dict=True)
 		else:
 			customer_data = frappe.db.sql("""
-				SELECT c.name, c.customer_name, c.custom_sales_person, c.mobile_no, c.email_id,c.custom_client_tiers,
+				SELECT c.name, c.customer_name, c.custom_sales_person, COALESCE(c.custom_contact, c.contact_no) AS mobile_no, c.email_id,c.custom_client_tiers,
 				(SELECT MAX(si.posting_date) FROM `tabSales Invoice` si WHERE si.customer = c.customer_name) AS last_purchase_date
 				FROM `tabCustomer` c
 				WHERE c.custom_sales_person is null {conditions}  LIMIT %(offset)s,20
@@ -105,7 +105,7 @@ def get_unassigned_customer_list():
 		condition = ""
 		condition_params = {}
 		if search is not None and search != "":
-			condition += " AND (c.customer_name LIKE %(search)s) or (c.mobile_no LIKE %(search)s)"
+			condition += " AND (c.customer_name LIKE %(search)s) or (c.contact_no LIKE %(search)s) or (c.custom_contact LIKE %(search)s"
 			condition_params['search'] = f"%{search}%"
 
 		user = frappe.session.user
@@ -120,7 +120,7 @@ def get_unassigned_customer_list():
 			return
 
 		sql_query = f"""
-			SELECT c.name, c.customer_name, c.mobile_no, c.custom_sales_person
+			SELECT c.name, c.customer_name, COALESCE(c.custom_contact, c.contact_no) AS mobile_no, c.custom_sales_person
 			FROM `tabCustomer` c
 			WHERE (c.custom_sales_person != %(sales_person)s OR c.custom_sales_person IS NULL) {condition}
 			LIMIT %(offset)s, %(limit)s
@@ -257,7 +257,7 @@ def get_customer_detail(customer_name):
 	try:
 		customer_detail = frappe.db.sql("""
 		select c.name,c.customer_name,c.custom_date_of_birth,c.custom_anniversary_date,c.custom_sales_person,c.custom_client_tiers,
-		c.mobile_no,c.email_id,c.customer_primary_address,(SELECT MAX(si.posting_date) FROM `tabSales Invoice` si WHERE si.customer = c.customer_name) AS last_purchase_date
+		COALESCE(c.custom_contact, c.contact_no) AS mobile_no,c.email_id,c.customer_primary_address,(SELECT MAX(si.posting_date) FROM `tabSales Invoice` si WHERE si.customer = c.customer_name) AS last_purchase_date
 		from `tabCustomer` c 
 		where name = %(customer)s""", {'customer': customer_name}, as_dict=1)
 
@@ -357,7 +357,7 @@ def update_customer_mobile(customer_name, mobile_number):
 		""", {"phone":mobile_number, "customer":customer_name})
 
 		customer = frappe.get_doc("Customer", customer_name)
-		customer.mobile_no = mobile_number
+		customer.custom_contact = mobile_number
 		customer.save(ignore_permissions = 1)
 		frappe.db.commit()
 
@@ -378,7 +378,7 @@ def get_all_customer_list():
 		condition = "AND customer_name LIKE %(search)s" if search else ""
 
 		customer_list = frappe.db.sql("""
-			SELECT customer_name, mobile_no 
+			SELECT customer_name, COALESCE(custom_contact, contact_no) AS mobile_no
 			FROM `tabCustomer`
 			WHERE disabled = 0 {conditions}
 			LIMIT %(offset)s, 20
