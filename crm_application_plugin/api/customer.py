@@ -334,7 +334,9 @@ def sales_person_list(assigned=None):
 
 
 def get_decendants(sales_person, seen=None):
+    
     """Return all descendants of a Sales Person (unique by name)."""
+    
     if seen is None:
         seen = set()
 
