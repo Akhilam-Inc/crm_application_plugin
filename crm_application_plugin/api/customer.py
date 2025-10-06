@@ -291,49 +291,86 @@ def close_active_todo(todo_list):
 
 @frappe.whitelist()
 def sales_person_list(assigned=None):
-	
-	sales_person_list = []
-	try:
-		#if assigned then only get sales person assigned to the current user
-		if assigned:
-			employee = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "name")
-			if not employee:
-				create_response(406, "Employee not found for the current user.")
-				return
-			
-			sales_person,is_group = frappe.db.get_value("Sales Person", {"employee": employee}, ["name","is_group"])
-			
-			if is_group:
-				sales_person_list = get_decendants(sales_person)
-				
-				if sales_person_list:
-					create_response(200,"Sales Person List Fetched!",sales_person_list)
-					
-					
-				
-			else:
-				create_response(200,"Sales Person List Fetched!",[])
-				
-		
-		#Get all sales person
-		else:
-			sales_person_list = frappe.db.sql("""select sp.name,sp.custom_botique,ep.cell_number,ep.prefered_email from `tabSales Person` sp left join `tabEmployee` ep on sp.employee = ep.name where sp.name not in ('Sales Team')""",as_dict=1)
-		create_response(200,"Sales Person List Fetched!",sales_person_list)
-	except Exception as e:
-		create_response(406,"Internal server error",str(e))
+    try:
+        # If `assigned`, only return the current user's subtree
+        if assigned:
+            employee = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "name")
+            if not employee:
+                return create_response(406, "Employee not found for the current user.")
 
-def get_decendants(sales_person):
-	
-	sales_person_list = frappe.db.sql("""select sp.is_group,sp.name,sp.custom_botique,ep.cell_number,ep.prefered_email from `tabSales Person` sp left join `tabEmployee` ep on sp.employee = ep.name where sp.name not in ('Sales Team') and sp.parent_sales_person = %(sales_person)s""",{'sales_person':sales_person},as_dict=1)
-	
-	
-	for sp in sales_person_list:
-		
-		if sp['is_group'] == 1:
-			sub_sales_person_list = get_decendants(sp['name'])
-			sales_person_list.extend(sub_sales_person_list)
-	
-	return sales_person_list
+            sales_person, is_group = frappe.db.get_value(
+                "Sales Person", {"employee": employee}, ["name", "is_group"]
+            ) or (None, None)
+
+            if not sales_person:
+                return create_response(406, "No Sales Person linked to your Employee record.")
+
+            # If the current user's Sales Person is a group, return its descendants (unique)
+            if is_group:
+                descendants = get_decendants(sales_person, seen=set())
+                return create_response(200, "Sales Person List Fetched!", descendants)
+            else:
+                # Not a group → no subordinates
+                return create_response(200, "Sales Person List Fetched!", [])
+
+        # Else: Get ALL sales persons (unique)
+        rows = frappe.db.sql(
+            """
+            SELECT DISTINCT
+                sp.name,
+                sp.custom_botique,
+                ep.cell_number,
+                ep.prefered_email
+            FROM `tabSales Person` sp
+            LEFT JOIN `tabEmployee` ep ON sp.employee = ep.name
+            WHERE sp.name NOT IN ('Sales Team')
+            """,
+            as_dict=1,
+        )
+        return create_response(200, "Sales Person List Fetched!", rows)
+
+    except Exception as e:
+        return create_response(406, "Internal server error", frappe.get_traceback() or str(e))
+
+
+def get_decendants(sales_person, seen=None):
+    """Return all descendants of a Sales Person (unique by name)."""
+    if seen is None:
+        seen = set()
+
+    result = []
+
+    children = frappe.db.sql(
+        """
+        SELECT
+            sp.is_group,
+            sp.name,
+            sp.custom_botique,
+            ep.cell_number,
+            ep.prefered_email
+        FROM `tabSales Person` sp
+        LEFT JOIN `tabEmployee` ep ON sp.employee = ep.name
+        WHERE sp.name NOT IN ('Sales Team')
+          AND sp.parent_sales_person = %(sales_person)s
+        """,
+        {"sales_person": sales_person},
+        as_dict=1,
+    )
+
+    for child in children:
+        child_name = child["name"]
+        if child_name in seen:
+            continue  # skip duplicates
+
+        seen.add(child_name)
+        result.append(child)
+
+        # Recurse only for groups
+        if child.get("is_group") == 1:
+            result.extend(get_decendants(child_name, seen=seen))
+
+    return result
+
 
 
 @frappe.whitelist()
