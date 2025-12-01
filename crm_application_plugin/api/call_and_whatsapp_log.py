@@ -25,7 +25,7 @@ def create_call_log(call_by,call_to,mobile_no):
 
 
 @frappe.whitelist()
-def create_whatsapp_log(message_by,message_to,mobile_no,message):
+def create_whatsapp_log(message_by,message_to,mobile_no,message, default = 0):
 	try:
 		if not message_by or not message_to or not mobile_no:
 			create_response(422, "Invalid request data", "Please provide message_by, message_to, and mobile_no.")
@@ -37,6 +37,7 @@ def create_whatsapp_log(message_by,message_to,mobile_no,message):
 		whatsapp_obj.sent_on = frappe.utils.now()
 		whatsapp_obj.mobile_number = mobile_no
 		whatsapp_obj.message = message
+		whatsapp_obj.default_message = default
 		whatsapp_doc = whatsapp_obj.insert(ignore_permissions= 1)
 
 		create_response(200,"Aetas Call Log created successfully",whatsapp_doc.name)
