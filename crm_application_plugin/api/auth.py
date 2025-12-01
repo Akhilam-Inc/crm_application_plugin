@@ -38,13 +38,13 @@ def login(usr,pwd,device_id=None):
 	sales_person = None
 	sales_manager = 0
 	if employee:
-		sales_person,sales_manager, botique = frappe.db.get_value("Sales Person" , {"employee" : employee} , ["name","is_group", "custom_botique"])
+		sales_person,sales_manager, botique , higher_authority = frappe.db.get_value("Sales Person" , {"employee" : employee} , ["name", "is_group", "custom_botique" , "custom_is_higher_authority"])
 
 	if not sales_person  or not employee:
 		create_response(422 ,"Sales Person Employee mapping is not correctly done for your user, Kindly contact admin!")
 		return 
 
-	frappe.response["user"] =   {
+	frappe.response["user"] = {
 		"first_name": escape_html(user.first_name),
 		"last_name": escape_html(user.last_name),
 		"gender": escape_html(user.gender) or "",
@@ -55,6 +55,7 @@ def login(usr,pwd,device_id=None):
 		"email":user.email,
 		"sales_id" : sales_person if sales_person is not None else "",
 		"sales_manager" : sales_manager == 1,
+		"is_higher_authority" : higher_authority == 1,
   		"boutique" : botique or "",
 		"company" : {
 			"name" : default_company_doc.name or "",

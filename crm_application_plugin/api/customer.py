@@ -44,7 +44,7 @@ def get_assigned_customer_list(salesperson=None):
 				SELECT c.name, c.customer_name, c.custom_sales_person, COALESCE(c.custom_contact, c.contact_no) AS mobile_no, c.email_id,c.custom_client_tiers,
 				(SELECT MAX(si.posting_date) FROM `tabSales Invoice` si WHERE si.customer = c.customer_name) AS last_purchase_date
 				FROM `tabCustomer` c
-				WHERE c.custom_sales_person in %(sales_person)s {conditions}  LIMIT %(offset)s,20
+				WHERE c.custom_incognito = 0 AND c.custom_sales_person in %(sales_person)s {conditions}  LIMIT %(offset)s,20
 			""".format(conditions = condition),{
 				"sales_person":get_sales_person_herarchy(user,salesperson),
 				"search" : "%"+search+"%",
@@ -56,7 +56,7 @@ def get_assigned_customer_list(salesperson=None):
 				SELECT c.name, c.customer_name, c.custom_sales_person, COALESCE(c.custom_contact, c.contact_no) AS mobile_no, c.email_id,c.custom_client_tiers,
 				(SELECT MAX(si.posting_date) FROM `tabSales Invoice` si WHERE si.customer = c.customer_name) AS last_purchase_date
 				FROM `tabCustomer` c
-				WHERE c.custom_sales_person is null {conditions}  LIMIT %(offset)s,20
+				WHERE c.custom_incognito = 0 AND c.custom_sales_person is null {conditions}  LIMIT %(offset)s,20
 			""".format(conditions = condition),{
 				"sales_person":get_sales_person_herarchy(user,salesperson),
 				"search" : "%"+search+"%",
@@ -122,7 +122,7 @@ def get_unassigned_customer_list():
 		sql_query = f"""
 			SELECT c.name, c.customer_name, COALESCE(c.custom_contact, c.contact_no) AS mobile_no, c.custom_sales_person
 			FROM `tabCustomer` c
-			WHERE (c.custom_sales_person != %(sales_person)s OR c.custom_sales_person IS NULL) {condition}
+			WHERE c.custom_incognito = 0 AND (c.custom_sales_person != %(sales_person)s OR c.custom_sales_person IS NULL) {condition}
 			LIMIT %(offset)s, %(limit)s
 		"""
 
