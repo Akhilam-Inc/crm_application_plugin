@@ -65,7 +65,9 @@ fixtures = [
                 "Warehouse-custom_reserved_warehouse",
                 "Warehouse-custom_is_reserved",
                 "Warehouse-custom_is_disable_in_mobile",
-                "Campaign-custom_sales_person","Campaign-custom_from_date","Campaign-custom_to_date"
+                "Campaign-custom_sales_person","Campaign-custom_from_date","Campaign-custom_to_date",
+                "Sales Person-custom_is_higher_authority",
+                "Customer-custom_incognito"
 			]
 		]
 	]},
