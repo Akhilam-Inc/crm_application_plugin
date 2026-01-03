@@ -1,95 +1,115 @@
-import frappe
-from frappe.utils import escape_html
-from frappe import throw, msgprint, _
 import base64
+
+import frappe
 from crm_application_plugin.api.utils import create_response
+from frappe.utils import escape_html
+
 
 @frappe.whitelist(allow_guest=True)
 def sample_api():
-	return create_response(200, "Sample Tested Successfully" , {
-		"sample" : "test"
-	})
+    return create_response(200, "Sample Tested Successfully", {"sample": "test"})
 
 
 @frappe.whitelist(allow_guest=True)
-def login(usr,pwd,device_id=None):
-	try:
-		login_manager = frappe.auth.LoginManager()
-		login_manager.authenticate(user=usr,pwd=pwd)
-		login_manager.post_login()
-		set_device_id(usr,device_id)
-	except frappe.exceptions.AuthenticationError:
-		frappe.clear_messages()
-		frappe.local.response.http_status_code = 422
-		frappe.local.response["message"] =  "Invalid Email or Password"
-		return
-	
-	user = frappe.get_doc('User',frappe.session.user)
+def login(usr, pwd, device_id=None):
+    try:
+        login_manager = frappe.auth.LoginManager()
+        login_manager.authenticate(user=usr, pwd=pwd)
+        login_manager.post_login()
+        set_device_id(usr, device_id)
+    except frappe.exceptions.AuthenticationError:
+        frappe.clear_messages()
+        frappe.local.response.http_status_code = 422
+        frappe.local.response["message"] = "Invalid Email or Password"
+        return
 
-	api_generate=generate_keys(user)
-	
-	token_string = str(api_generate['api_key']) +":"+ str(api_generate['api_secret'])
+    user = frappe.get_doc("User", frappe.session.user)
 
-	default_company = frappe.db.get_single_value('Global Defaults','default_company')
-	if default_company:
-		default_company_doc = frappe.get_doc("Company" , default_company)
+    api_generate = generate_keys(user)
 
-	employee = frappe.db.get_value("Employee",{"user_id" : user.email} ,"name")
-	sales_person = None
-	sales_manager = 0
-	if employee:
-		sales_person,sales_manager, botique , higher_authority = frappe.db.get_value("Sales Person" , {"employee" : employee} , ["name", "is_group", "custom_botique" , "custom_is_higher_authority"])
+    token_string = str(api_generate["api_key"]) + ":" + str(api_generate["api_secret"])
 
-	if not sales_person  or not employee:
-		create_response(422 ,"Sales Person Employee mapping is not correctly done for your user, Kindly contact admin!")
-		return 
+    default_company = frappe.db.get_single_value("Global Defaults", "default_company")
+    if default_company:
+        default_company_doc = frappe.get_doc("Company", default_company)
 
-	frappe.response["user"] = {
-		"first_name": escape_html(user.first_name),
-		"last_name": escape_html(user.last_name),
-		"gender": escape_html(user.gender) or "",
-		"birth_date": user.birth_date or "",       
-		"mobile_no": user.mobile_no or "",
-		"username":user.username,
-		"full_name":user.full_name,
-		"email":user.email,
-		"sales_id" : sales_person if sales_person is not None else "",
-		"sales_manager" : sales_manager == 1,
-		"is_higher_authority" : higher_authority == 1,
-  		"boutique" : botique or "",
-		"company" : {
-			"name" : default_company_doc.name or "",
-			"email" : default_company_doc.email or "",
-			"website" : default_company_doc.website or ""
-		}
-	}
-	frappe.response["token"] =  base64.b64encode(token_string.encode("ascii")).decode("utf-8")
-	return
-	
+    employee = frappe.db.get_value("Employee", {"user_id": user.email}, "name")
+    sales_person = None
+    sales_manager = 0
+    if employee:
+        sales_person, sales_manager, botique, higher_authority, enabled = (
+            frappe.db.get_value(
+                "Sales Person",
+                {"employee": employee},
+                [
+                    "name",
+                    "is_group",
+                    "custom_botique",
+                    "custom_is_higher_authority",
+                    "enabled",
+                ],
+            )
+        )
+
+    if not sales_person or not employee:
+        create_response(
+            422,
+            "Sales Person Employee mapping is not correctly done for your user, Kindly contact admin!",
+        )
+        return
+
+    frappe.response["user"] = {
+        "first_name": escape_html(user.first_name),
+        "last_name": escape_html(user.last_name),
+        "gender": escape_html(user.gender) or "",
+        "birth_date": user.birth_date or "",
+        "mobile_no": user.mobile_no or "",
+        "username": user.username,
+        "full_name": user.full_name,
+        "email": user.email,
+        "sales_id": sales_person if sales_person is not None else "",
+        "sales_manager": sales_manager == 1,
+        "is_higher_authority": higher_authority == 1,
+        "boutique": botique or "",
+        "enabled": enabled == 1,
+        "company": {
+            "name": default_company_doc.name or "",
+            "email": default_company_doc.email or "",
+            "website": default_company_doc.website or "",
+        },
+    }
+    frappe.response["token"] = base64.b64encode(token_string.encode("ascii")).decode(
+        "utf-8"
+    )
+    return
 
 
-def set_device_id(user,device_id):
-	# pass
-	frappe.db.set_value("User Device",{"user_id":user},"player_id",device_id)
+def set_device_id(user, device_id):
+    # pass
+    frappe.db.set_value("User Device", {"user_id": user}, "player_id", device_id)
+
 
 def generate_keys(user):
-	api_secret = api_key = ''
-	if not user.api_key and not user.api_secret:
-		api_secret = frappe.generate_hash(length=15)
-		# if api key is not set generate api key
-		api_key = frappe.generate_hash(length=15)
-		user.api_key = api_key
-		user.api_secret = api_secret
-		user.save(ignore_permissions=True)
-	else:
-		api_secret = user.get_password('api_secret')
-		api_key = user.get('api_key')
-	return {"api_secret": api_secret, "api_key": api_key}
+    api_secret = api_key = ""
+    if not user.api_key and not user.api_secret:
+        api_secret = frappe.generate_hash(length=15)
+        # if api key is not set generate api key
+        api_key = frappe.generate_hash(length=15)
+        user.api_key = api_key
+        user.api_secret = api_secret
+        user.save(ignore_permissions=True)
+    else:
+        api_secret = user.get_password("api_secret")
+        api_key = user.get("api_key")
+    return {"api_secret": api_secret, "api_key": api_key}
+
 
 @frappe.whitelist(allow_guest=True)
 def forgot_password(usr):
-	email = frappe.db.get("User", {"email": usr})
-	if email:
-		frappe.response["message"] = "We have sent password reset link to your mail id, Please check your mail."
-	else:
-		frappe.response["message"] = "User does not exist"
+    email = frappe.db.get("User", {"email": usr})
+    if email:
+        frappe.response["message"] = (
+            "We have sent password reset link to your mail id, Please check your mail."
+        )
+    else:
+        frappe.response["message"] = "User does not exist"

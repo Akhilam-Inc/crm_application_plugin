@@ -1,7 +1,6 @@
 from functools import reduce
 
 import frappe
-from crm_application_plugin.api.item import training_subjects
 from crm_application_plugin.api.utils import create_response
 
 
@@ -72,28 +71,7 @@ def get_home_data():
         as_dict=1,
     )
     max_item_price = maximum_item_price[0].max_shopify_selling_rate
-    filters_data = get_unique_item_filters()
-    try:
-        brand_details = frappe.db.sql(
-            """
-            SELECT
-                b.name AS brand_name,
-                b.custom_brand_logo as file_url,
-                IFNULL(bp.title, '') AS pdf_title,
-                IFNULL(bv.title, '') AS video_title
-            FROM `tabBrand` b
-            LEFT JOIN `tabBrand Pdfs` bp ON b.name = bp.parent
-            LEFT JOIN `tabBrand Videos` bv ON b.name = bv.parent
-            where b.custom_disabled = 0
-        """,
-            as_dict=1,
-        )
 
-        # Organize the data into a structured format
-        brand_info = reduce(training_subjects, brand_details, {})
-        brand_info = list(map(lambda x: x["brand_name"], brand_info.values()))
-    except Exception:
-        pass
     create_response(
         200,
         "Home Data Fetched Successfully",
@@ -109,9 +87,39 @@ def get_home_data():
             "maximum_shopify_selling_rate": max_item_price
             if max_item_price
             else 1000000000,
-            "filters": {**{"brand": brand_info}, **filters_data},
         },
     )
+
+
+# @frappe.whitelist()
+# def get_filters():
+#     filters_data = get_unique_item_filters()
+#     try:
+#         brand_details = frappe.db.sql(
+#             """
+#             SELECT
+#                 b.name AS brand_name,
+#                 b.custom_brand_logo as file_url,
+#                 IFNULL(bp.title, '') AS pdf_title,
+#                 IFNULL(bv.title, '') AS video_title
+#             FROM `tabBrand` b
+#             LEFT JOIN `tabBrand Pdfs` bp ON b.name = bp.parent
+#             LEFT JOIN `tabBrand Videos` bv ON b.name = bv.parent
+#             where b.custom_disabled = 0
+#         """,
+#             as_dict=1,
+#         )
+
+#         # Organize the data into a structured format
+#         brand_info = reduce(training_subjects, brand_details, {})
+#         brand_info = list(map(lambda x: x["brand_name"], brand_info.values()))
+#     except Exception:
+#         pass
+#     return create_response(
+#         200,
+#         "Unique Item Filters Fetched Successfully",
+#         {**{"brand": brand_info}, **filters_data},
+#     )
 
 
 def get_sales_person_herarchy(user, salesperson=None):
@@ -151,8 +159,6 @@ def get_sales_person_herarchy(user, salesperson=None):
 
 def get_total_count_boutique():
     try:
-        condition = ""
-
         employee = frappe.get_value(
             "Employee", {"user_id": frappe.session.user}, "name"
         )
@@ -244,3 +250,77 @@ def get_unique_item_filters():
         filters_output[api_key] = unique_values
 
     return filters_output
+
+
+@frappe.whitelist(allow_guest=False)
+def get_dynamic_filters():
+    try:
+        # 1. Get all potential filter values from the request
+        params = frappe.local.form_dict
+
+        # 2. Define the watch-specific fields mapping
+        # Format: { api_key: custom_field_name }
+        filter_map = {
+            "brand": "brand",
+            "collection": "custom_collection",
+            "dial_size": "custom_dial_size",
+            "dial_shape": "custom_dial_shape",
+            "case_material": "custom_case_material",
+            "diamonds": "custom_diamonds",
+            "strapbracelet": "custom_strapbracelet",
+            "gender": "custom_gender",
+            "movement": "custom_movement",
+        }
+
+        final_filters = {}
+
+        # 3. Iterate through each category to find dynamic unique values
+        for api_key, db_field in filter_map.items():
+            conditions = ["i.item_group = 'Watch'"]
+            values = {}
+
+            # 4. Apply all filters EXCEPT the current one (Self-Exclusion Rule)
+            # This allows users to change their selection within the same category
+            for other_key, other_db_field in filter_map.items():
+                if other_key == api_key:
+                    continue
+
+                val = params.get(other_key)
+                if val:
+                    val_array = val.split(",")
+                    conditions.append(f"i.{other_db_field} IN %({other_key})s")
+                    values[other_key] = val_array
+
+            # 5. Handle Price Range in Filters if provided
+            if params.get("min_price") and params.get("max_price"):
+                conditions.append(
+                    "i.shopify_selling_rate BETWEEN %(min_price)s AND %(max_price)s"
+                )
+                values["min_price"] = params.get("min_price")
+                values["max_price"] = params.get("max_price")
+
+            # 6. Execute Dynamic SQL
+            where_clause = " AND ".join(conditions)
+
+            # We join with Ecommerce Item to ensure we only show filters for items
+            # that actually appear in the product list (synced to shopify)
+            raw_values = frappe.db.sql(
+                f"""
+                SELECT DISTINCT i.{db_field}
+                FROM `tabItem` i
+                INNER JOIN `tabEcommerce Item` ei ON i.item_code = ei.erpnext_item_code
+                WHERE {where_clause} 
+                AND i.{db_field} IS NOT NULL 
+                AND i.{db_field} != ''
+            """,
+                values,
+                pluck=True,
+            )
+
+            final_filters[api_key] = raw_values
+
+        return create_response(
+            200, "Dynamic Filters Fetched Successfully", final_filters
+        )
+    except Exception as e:
+        return create_response(500, "An error occurred while fetching filters", e)
