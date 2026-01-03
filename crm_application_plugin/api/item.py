@@ -10,84 +10,87 @@ from requests.exceptions import RequestException
 def get_product_list():
     try:
         # Standard filters
-        min_price = frappe.local.form_dict.min_price
-        max_price = frappe.local.form_dict.max_price
-        brand_string = frappe.local.form_dict.brand
-        search = frappe.local.form_dict.search or ""
-        offset = (
-            int(frappe.local.form_dict.offset) if frappe.local.form_dict.offset else 0
-        )
+        form_data = frappe.local.form_dict
+        min_price = form_data.get("min_price")
+        max_price = form_data.get("max_price")
+        brand_string = form_data.get("brand")
+        search = form_data.get("search", "")
+        offset = int(form_data.get("offset", 0))
 
         # [NEW] Watch specific filters
-        collection = frappe.local.form_dict.collection
-        dial_size = frappe.local.form_dict.dial_size
-        dial_shape = frappe.local.form_dict.dial_shape
-        case_material = frappe.local.form_dict.case_material
-        diamonds = frappe.local.form_dict.diamonds
-        strap_bracelet = frappe.local.form_dict.strapbracelet
-        gender = frappe.local.form_dict.gender
-        movement = frappe.local.form_dict.movement
+        filters = {
+            "brand": brand_string,
+            "collection": form_data.get("collection"),
+            "dial_size": form_data.get("dial_size"),
+            "dial_shape": form_data.get("dial_shape"),
+            "case_material": form_data.get("case_material"),
+            "diamonds": form_data.get("diamonds"),
+            "strap_bracelet": form_data.get("strapbracelet"),
+            "gender": form_data.get("gender"),
+            "movement": form_data.get("movement"),
+        }
 
         condition = ""
+        query_params = {
+            "search": f"%{search}%",
+            "offset": offset,
+            "min_price": min_price,
+            "max_price": max_price,
+        }
+
         if search:
             condition += (
-                " and (i.item_name like %(search)s or i.item_code like %(search)s)"
+                " AND (i.item_name LIKE %(search)s OR i.item_code LIKE %(search)s)"
             )
 
         if min_price and max_price:
             condition += (
-                " and i.shopify_selling_rate between %(min_price)s and %(max_price)s"
+                " AND i.shopify_selling_rate BETWEEN %(min_price)s AND %(max_price)s"
             )
 
-        if brand_string:
-            brand_array = brand_string.split(",")
-            condition += " and i.brand in %(brand)s"
+        # Map frontend filters to DB columns
+        filter_map = {
+            "brand": "i.brand",
+            "collection": "i.custom_collection",
+            "dial_size": "i.custom_dial_size",
+            "dial_shape": "i.custom_dial_shape",
+            "case_material": "i.custom_case_material",
+            "diamonds": "i.custom_diamonds",
+            "strap_bracelet": "i.custom_strapbracelet",
+            "gender": "i.custom_gender",
+            "movement": "i.custom_movement",
+        }
 
-        # [NEW] Append Watch Attribute conditions
-        # Note: We use i.fieldname to match the custom columns in tabItem
-        if collection:
-            condition += " and i.custom_collection = %(collection)s"
-        if dial_size:
-            condition += " and i.custom_dial_size = %(dial_size)s"
-        if dial_shape:
-            condition += " and i.custom_dial_shape = %(dial_shape)s"
-        if case_material:
-            condition += " and i.custom_case_material = %(case_material)s"
-        if diamonds:
-            condition += " and i.custom_diamonds = %(diamonds)s"
-        if strap_bracelet:
-            condition += " and i.custom_strapbracelet = %(strap_bracelet)s"
-        if gender:
-            condition += " and i.custom_gender = %(gender)s"
-        if movement:
-            condition += " and i.custom_movement = %(movement)s"
+        for key, column in filter_map.items():
+            val = filters.get(key)
+            if val:
+                # Split and clean whitespace
+                val_list = [v.strip() for v in val.split(",")]
+                condition += f" AND {column} IN %({key})s"
+                query_params[key] = val_list
 
         # Security and Warehouse logic
         employee = frappe.get_value(
             "Employee", {"user_id": frappe.session.user}, "name"
         )
         if not employee:
-            create_response(406, "Employee not found for the current user.")
-            return
+            return create_response(406, "Employee not found for the current user.")
 
         boutique_name = frappe.get_value(
             "Sales Person", {"employee": employee}, "custom_botique"
         )
         if not boutique_name:
-            create_response(406, "Boutique Not Defined For This Sales Person!")
-            return
+            return create_response(406, "Boutique Not Defined For This Sales Person!")
 
         warehouse_name = frappe.db.get_value(
             "Boutique", boutique_name, "boutique_warehouse"
         )
         if not warehouse_name:
-            create_response(406, "Warehouse Not Defined In Boutique Document!")
-            return
+            return create_response(406, "Warehouse Not Defined In Boutique Document!")
 
-        if frappe.local.form_dict.myboutique:
+        having_condition = "HAVING (my_boutique > 0) OR (other_boutique > 0)"
+        if form_data.get("myboutique"):
             having_condition = "HAVING my_boutique > 0"
-        else:
-            having_condition = "HAVING (my_boutique > 0) or (other_boutique > 0)"
 
         reserverd_warehouse = frappe.db.get_list(
             "Warehouse", filters={"custom_is_reserved": 1}, pluck="name"
@@ -96,47 +99,46 @@ def get_product_list():
             "Warehouse", filters={"custom_is_disable_in_mobile": 1}, pluck="name"
         )
 
-        exception_warehouse = reserverd_warehouse + disabled_warehouse
-        exception_warehouse.append(warehouse_name)
+        exception_warehouse = list(
+            set(reserverd_warehouse + disabled_warehouse + [warehouse_name])
+        )
+
+        query_params.update(
+            {
+                "warehouse": warehouse_name,
+                "reserved_warehouse": reserverd_warehouse or [""],
+                "exception_warehouse": exception_warehouse,
+            }
+        )
 
         item_details = frappe.db.sql(
-            """
-            SELECT i.item_code, i.brand, i.item_name, IFNULL(i.image,'') as image, i.shopify_selling_rate as price,
-            (select IFNULL(actual_qty,0) from `tabBin` where item_code = i.item_code and warehouse = %(warehouse)s) as my_boutique,
-            (select IFNULL(actual_qty,0) from `tabBin` where item_code = i.item_code and warehouse = %(reserved_warehouse)s) as my_reserved,
-            (select IFNULL(sum(actual_qty),0) from `tabBin` where item_code = i.item_code and warehouse not in %(exception_warehouse)s) as other_boutique,
-            CONCAT('https://artoftimeindia.com/products/', i.product_handle) as share_link
-            FROM `tabItem` i inner join `tabEcommerce Item` ei on i.item_code = ei.erpnext_item_code
-            where i.item_group = 'Watch'
-            {conditions} 
-            GROUP BY i.item_code {having_condition}
+            f"""
+            SELECT 
+                i.item_code, i.brand, i.item_name, IFNULL(i.image,'') as image, 
+                i.shopify_selling_rate as price,
+                (SELECT IFNULL(SUM(actual_qty), 0) FROM `tabBin` WHERE item_code = i.item_code AND warehouse = %(warehouse)s) as my_boutique,
+                (SELECT IFNULL(SUM(actual_qty), 0) FROM `tabBin` WHERE item_code = i.item_code AND warehouse IN %(reserved_warehouse)s) as my_reserved,
+                (SELECT IFNULL(SUM(actual_qty), 0) FROM `tabBin` WHERE item_code = i.item_code AND warehouse NOT IN %(exception_warehouse)s) as other_boutique,
+                CONCAT('https://artoftimeindia.com/products/', i.product_handle) as share_link
+            FROM `tabItem` i 
+            INNER JOIN `tabEcommerce Item` ei ON i.item_code = ei.erpnext_item_code
+            WHERE i.item_group = 'Watch'
+            {condition} 
+            GROUP BY i.item_code 
+            {having_condition}
             LIMIT %(offset)s, 20
-            """.format(conditions=condition, having_condition=having_condition),
-            {
-                "search": "%" + search + "%",
-                "offset": int(offset),
-                "warehouse": warehouse_name,
-                "reserved_warehouse": reserverd_warehouse,
-                "exception_warehouse": exception_warehouse,
-                "min_price": min_price,
-                "max_price": max_price,
-                "brand": brand_array if brand_string else [],
-                "collection": collection,
-                "dial_size": dial_size,
-                "dial_shape": dial_shape,
-                "case_material": case_material,
-                "diamonds": diamonds,
-                "strap_bracelet": strap_bracelet,
-                "gender": gender,
-                "movement": movement,
-            },
+            """,
+            query_params,
             as_dict=1,
         )
 
-        create_response(200, "Item data Fetched Successfully!", item_details)
+        return create_response(200, "Item data Fetched Successfully!", item_details)
+
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "get_product_list error")
-        create_response(500, "An error occurred while getting list of item", str(e))
+        return create_response(
+            500, "An error occurred while getting list of item", str(e)
+        )
 
 
 @frappe.whitelist()
