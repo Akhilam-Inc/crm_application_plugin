@@ -81,6 +81,11 @@ def get_assigned_customer_list(salesperson=None):
                 {"customer": row["name"]},
                 as_dict=1,
             )
+            if row["custom_incognito"] == 1:
+                if row["custom_sales_person"] == sales_person:
+                    row["custom_incognito"] = 0
+                else:
+                    row["custom_incognito"] = 1
             row["campaigns"] = campaigns
             row["last_contacted_date"] = get_last_contacted_date(row["name"])
 
