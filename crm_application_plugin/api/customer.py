@@ -392,7 +392,11 @@ def sales_person_list(assigned=None):
                 return create_response(406, "Employee not found for the current user.")
 
             sales_person, is_group = frappe.db.get_value(
-                "Sales Person", {"employee": employee}, ["name", "is_group"]
+                "Sales Person",
+                {
+                    "employee": employee,
+                },
+                ["name", "is_group"],
             ) or (None, None)
 
             if not sales_person:
@@ -449,6 +453,7 @@ def get_decendants(sales_person, seen=None):
         LEFT JOIN `tabEmployee` ep ON sp.employee = ep.name
         WHERE sp.name NOT IN ('Sales Team')
           AND sp.parent_sales_person = %(sales_person)s
+          AND sp.enabled = 1
         """,
         {"sales_person": sales_person},
         as_dict=1,

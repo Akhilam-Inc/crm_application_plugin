@@ -127,20 +127,22 @@ def get_sales_person_herarchy(user, salesperson=None):
     if not employee:
         create_response(406, "Employee not found")
         return
-    sales_person = frappe.db.get_value("Sales Person", {"employee": employee}, "name")
+    sales_person = frappe.db.get_value(
+        "Sales Person", {"employee": employee, "enabled": 1}, "name"
+    )
     if not sales_person:
         create_response(406, "Sales Person not found")
         return
 
     if not salesperson:
         sales_person_is_group = frappe.db.get_value(
-            "Sales Person", sales_person, "is_group"
+            "Sales Person", {"name": sales_person, "enabled": 1}, "is_group"
         )
         sales_person_list = []
         if sales_person_is_group:
             sales_persons = frappe.db.get_all(
                 "Sales Person",
-                filters={"parent_sales_person": sales_person},
+                filters={"parent_sales_person": sales_person, "enabled": 1},
                 pluck="name",
             )
             for person in sales_persons:
