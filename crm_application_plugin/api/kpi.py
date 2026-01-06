@@ -318,7 +318,10 @@ def target():
     start_date, end_date = parse_range(from_param, to_param)
 
     sales_persons = frappe.local.form_dict.sales_persons or ""
-    sp_list = [sales_person] + (sales_persons.split(",") if sales_persons else [])
+    if sales_persons:
+        sp_list = sales_persons.split(",")
+    else:
+        sp_list = [sales_person]
 
     total_target = 0
     current_iter = start_date
@@ -375,7 +378,10 @@ def achvievement():
     )
 
     sales_persons = frappe.local.form_dict.sales_persons or ""
-    sp_list = [sales_person] + (sales_persons.split(",") if sales_persons else [])
+    if sales_persons:
+        sp_list = sales_persons.split(",")
+    else:
+        sp_list = [sales_person]
 
     # Fetch metrics and watch quantity for the specific item group 'Watch'
     sales_data = get_achived_range_sql(sp_list, start_date, end_date)
@@ -439,9 +445,11 @@ def botique_target():
 
     # Get additional boutiques from form dict if provided
     botiques_input = frappe.local.form_dict.get("botiques") or ""
-    bt_list = [sales_person_botique] + (
-        botiques_input.split(",") if botiques_input else []
-    )
+
+    if botiques_input:
+        bt_list = botiques_input.split(",")
+    else:
+        bt_list = [sales_person_botique]
 
     # Find all Sales Persons associated with the selected boutiques
     botiue_sales_person_list = frappe.db.get_all(
@@ -521,7 +529,10 @@ def botique_achvievement():
     )
 
     extra_bts = frappe.local.form_dict.botiques or ""
-    bt_list = [boutique_name] + (extra_bts.split(",") if extra_bts else [])
+    if extra_bts:
+        bt_list = extra_bts.split(",")
+    else:
+        bt_list = [boutique_name]
 
     # Get all sales persons for these boutiques
     sp_list = frappe.db.get_all(
