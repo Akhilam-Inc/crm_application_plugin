@@ -98,10 +98,12 @@ fixtures = [
                     "Customer-custom_incognito",
                     "Lead-custom_journey",
                     "Lead-custom_lead_journey",
+                    "Lead-custom_followup_date",
                 ],
             ]
         ],
     },
+    {"dt": "Property Setter", "filters": [["name", "in", ["Lead-status-options"]]]},
 ]
 
 # Generators
