@@ -101,7 +101,7 @@ def create_lead_log(
             "by_user": by_user,
             "to_customer": to_customer,
             "mobile_number": mobile_no,
-            "log_type": log_type,
+            "type": log_type,
             "initiated_at": now_datetime(),
         }
 
