@@ -1,6 +1,6 @@
 import frappe
 from crm_application_plugin.api.utils import create_response
-from frappe.utils import now
+from frappe.utils import now_datetime
 
 
 @frappe.whitelist()
@@ -59,12 +59,7 @@ def create_whatsapp_log(message_by, message_to, mobile_no, message, default=0):
 
 @frappe.whitelist()
 def create_lead_log(
-    lead_name: str,
-    by_user: str,
-    to_customer: str,
-    mobile_no: str,
-    log_type: str,
-    initiated_at: str | None = None,
+    lead_name: str, by_user: str, to_customer: str, mobile_no: str, log_type: str
 ) -> None:
     """
     Creates a new log entry inside the Lead's child table based on the provided screenshot fields.
@@ -107,7 +102,7 @@ def create_lead_log(
             "to_customer": to_customer,
             "mobile_number": mobile_no,
             "log_type": log_type,
-            "initiated_at": initiated_at or now(),
+            "initiated_at": now_datetime(),
         }
 
         # 3. Create and Insert the Document
