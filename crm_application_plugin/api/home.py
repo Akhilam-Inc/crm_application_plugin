@@ -1,3 +1,4 @@
+import re
 from functools import reduce
 
 import frappe
@@ -257,11 +258,9 @@ def get_unique_item_filters():
 @frappe.whitelist(allow_guest=False)
 def get_dynamic_filters():
     try:
-        # 1. Get all potential filter values from the request
         params = frappe.local.form_dict
 
-        # 2. Define the watch-specific fields mapping
-        # Format: { api_key: custom_field_name }
+        # Define the watch-specific fields mapping
         filter_map = {
             "brand": "brand",
             "collection": "custom_collection",
@@ -274,26 +273,37 @@ def get_dynamic_filters():
             "movement": "custom_movement",
         }
 
+        # Fetch all brands that are NOT disabled
+        active_brands = frappe.get_all(
+            "Brand", filters={"custom_disabled": 0}, pluck="name"
+        )
+
         final_filters = {}
 
-        # 3. Iterate through each category to find dynamic unique values
         for api_key, db_field in filter_map.items():
             conditions = ["i.item_group = 'Watch'"]
             values = {}
 
-            # 4. Apply all filters EXCEPT the current one (Self-Exclusion Rule)
-            # This allows users to change their selection within the same category
+            # Apply Active Brand restriction globally
+            if active_brands:
+                conditions.append("i.brand IN %(active_brands)s")
+                values["active_brands"] = active_brands
+            else:
+                final_filters[api_key] = []
+                continue
+
+            # Apply Self-Exclusion Rule
             for other_key, other_db_field in filter_map.items():
                 if other_key == api_key:
                     continue
 
                 val = params.get(other_key)
                 if val:
-                    val_array = val.split(",")
+                    val_array = [v.strip() for v in val.split(",")]
                     conditions.append(f"i.{other_db_field} IN %({other_key})s")
                     values[other_key] = val_array
 
-            # 5. Handle Price Range in Filters if provided
+            # Handle Price Range
             if params.get("min_price") and params.get("max_price"):
                 conditions.append(
                     "i.shopify_selling_rate BETWEEN %(min_price)s AND %(max_price)s"
@@ -301,11 +311,8 @@ def get_dynamic_filters():
                 values["min_price"] = params.get("min_price")
                 values["max_price"] = params.get("max_price")
 
-            # 6. Execute Dynamic SQL
             where_clause = " AND ".join(conditions)
 
-            # We join with Ecommerce Item to ensure we only show filters for items
-            # that actually appear in the product list (synced to shopify)
             raw_values = frappe.db.sql(
                 f"""
                 SELECT DISTINCT i.{db_field}
@@ -314,15 +321,50 @@ def get_dynamic_filters():
                 WHERE {where_clause} 
                 AND i.{db_field} IS NOT NULL 
                 AND i.{db_field} != ''
-            """,
+                """,
                 values,
                 pluck=True,
             )
 
-            final_filters[api_key] = raw_values
+            # --- SORTING LOGIC ---
+
+            if api_key == "brand":
+                # 1. Alphabetical sort for active brands
+                final_filters[api_key] = sorted(
+                    [b for b in raw_values if b in active_brands]
+                )
+
+            elif api_key == "dial_size":
+                # 2. Ascending sort for dial sizes
+                final_filters[api_key] = sorted(raw_values, key=natural_sort_key)
+
+            else:
+                final_filters[api_key] = raw_values
 
         return create_response(
             200, "Dynamic Filters Fetched Successfully", final_filters
         )
     except Exception as e:
-        return create_response(500, "An error occurred while fetching filters", e)
+        frappe.log_error(frappe.get_traceback(), "get_dynamic_filters error")
+        return create_response(500, "An error occurred while fetching filters", str(e))
+
+
+def natural_sort_key(s):
+    """
+    Helper to sort strings containing numbers naturally.
+    Example: '6 mm' will come before '10 mm'.
+    """
+    # Split the string into chunks of text and numbers
+    # re.split(r'(\d+)') creates a list like ['6', ' mm'] or ['10', ' mm']
+    parts = re.split(r"(\d+(?:\.\d+)?)", s)
+
+    for part in parts:
+        try:
+            # If the part can be a number, return a tuple starting with 0 (high priority)
+            return (0, float(part), s.lower())
+        except ValueError:
+            # Continue checking parts if this one isn't a number
+            continue
+
+    # If no numbers were found in any part, return 1 (lower priority) to push to bottom
+    return (1, 0, s.lower())

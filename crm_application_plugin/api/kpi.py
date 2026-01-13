@@ -616,17 +616,20 @@ def get_target_sql(sp_list, month_name, fiscal_year):
 
 
 def get_achived_range_sql(sp_list, start, end):
+    """Calculates sales metrics for a specific date range, restricted to 'Watch' item group."""
     return frappe.db.sql(
         """
         SELECT 
             SUM(sii.amount) AS sales, 
             COUNT(DISTINCT si.name) AS si_count, 
             SUM(sii.qty) AS itm_qty, 
-            SUM(sii.qty)/NULLIF(COUNT(DISTINCT si.name), 0) AS unit_per_trans, 
-            SUM(sii.amount)/NULLIF(COUNT(DISTINCT si.name), 0) AS avg_amt_per_invoice  
+            SUM(sii.qty) / NULLIF(COUNT(DISTINCT si.name), 0) AS unit_per_trans, 
+            SUM(sii.amount) / NULLIF(COUNT(DISTINCT si.name), 0) AS avg_amt_per_invoice  
         FROM `tabSales Invoice Item` sii 
         INNER JOIN `tabSales Invoice` si ON sii.parent = si.name 
+        INNER JOIN `tabItem` i ON sii.item_code = i.name
         WHERE si.docstatus = 1 
+            AND i.item_group = 'Watch'
             AND sii.sales_person IN %(sp_list)s 
             AND si.posting_date BETWEEN %(start)s AND %(end)s
         """,
@@ -636,6 +639,7 @@ def get_achived_range_sql(sp_list, start, end):
 
 
 def get_boutique_cc_achievement_sql(boutiques, start, end):
+    """Calculates total sales based on boutique cost centers for the 'Watch' item group."""
     cc_list = frappe.get_all(
         "Boutique", filters={"name": ["in", boutiques]}, pluck="boutique_cost_center"
     )
@@ -649,7 +653,9 @@ def get_boutique_cc_achievement_sql(boutiques, start, end):
         SELECT COALESCE(SUM(sii.amount), 0) AS total
         FROM `tabSales Invoice Item` sii
         INNER JOIN `tabSales Invoice` si ON si.name = sii.parent
+        INNER JOIN `tabItem` i ON sii.item_code = i.name
         WHERE si.docstatus = 1
+            AND i.item_group = 'Watch'
             AND sii.cost_center IN %(cc_list)s
             AND si.posting_date BETWEEN %(start)s AND %(end)s
         """,
