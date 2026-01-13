@@ -339,7 +339,7 @@ def get_dynamic_filters():
                 final_filters[api_key] = sorted(raw_values, key=natural_sort_key)
 
             else:
-                final_filters[api_key] = raw_values
+                final_filters[api_key] = sorted(raw_values)
 
         return create_response(
             200, "Dynamic Filters Fetched Successfully", final_filters
