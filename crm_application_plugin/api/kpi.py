@@ -454,7 +454,7 @@ def botique_target():
     # Find all Sales Persons associated with the selected boutiques
     botiue_sales_person_list = frappe.db.get_all(
         "Sales Person",
-        {"custom_botique": ["IN", bt_list]},
+        {"custom_botique": ["IN", bt_list], "enabled": 1},
         pluck="name",
     )
 
@@ -536,7 +536,7 @@ def botique_achvievement():
 
     # Get all sales persons for these boutiques
     sp_list = frappe.db.get_all(
-        "Sales Person", {"custom_botique": ["IN", bt_list]}, pluck="name"
+        "Sales Person", {"custom_botique": ["IN", bt_list], "enabled": 1}, pluck="name"
     )
 
     achieved = get_boutique_cc_achievement_sql(bt_list, start_date, end_date)
