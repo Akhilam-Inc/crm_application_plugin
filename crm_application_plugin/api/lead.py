@@ -144,7 +144,7 @@ def add_sales_person_to_lead(lead_name):
             create_response(406, f"Lead not found: {lead_name}")
             return
 
-        today = frappe.utils.nowdate()
+        today = frappe.utils.now()
 
         already_exists = any(
             row.sales_person == sales_person for row in doc.custom_bids
@@ -244,22 +244,27 @@ def get_leads_of_applied_sales_person():
 
 @frappe.whitelist()
 def set_lead_status(lead_name, cold_description=None):
-    if not lead_name:
-        create_response(406, "Lead name is required")
-        return
+    try:
+        if not lead_name:
+            create_response(406, "Lead name is required")
+            return
 
-    doc = frappe.get_doc("Lead", lead_name)
-    if not doc:
-        create_response(406, f"Lead not found: {lead_name}")
-        return
+        doc = frappe.get_doc("Lead", lead_name)
+        if not doc:
+            create_response(406, f"Lead not found: {lead_name}")
+            return
 
-    if doc.status == "Cold":
-        create_response(409, f"Lead {lead_name} is already Cold")
-        return
+        if doc.status == "Cold":
+            create_response(409, f"Lead {lead_name} is already Cold")
+            return
 
-    doc.status = "Cold"
-    doc.custom_cold_description = cold_description
-    doc.save()
+        doc.status = "Cold"
+        doc.custom_cold_description = cold_description
+        doc.save()
+    except Exception as e:
+        frappe.log_error(f"Error setting lead status: {str(e)}")
+        create_response(409, str(e))
+        return
 
 
 @frappe.whitelist()
