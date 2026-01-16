@@ -549,12 +549,13 @@ def get_lead_source():
             int(frappe.local.form_dict.offset) if frappe.local.form_dict.offset else 0
         )
 
-        condition = "WHERE name LIKE %(search)s" if search else ""
+        condition = "AND name LIKE %(search)s" if search else ""
         lead_source_list = frappe.db.sql(
             """
-			SELECT name 
+			SELECT name, custom_index
 			FROM `tabLead Source`
-			{conditions}
+			WHERE custom_index >= 0 {conditions}
+            ORDER BY custom_index ASC
 			LIMIT %(offset)s, 20
 		""".format(conditions=condition),
             {"search": f"%{search}%", "offset": offset},
