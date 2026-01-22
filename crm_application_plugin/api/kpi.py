@@ -628,8 +628,7 @@ def get_achived_range_sql(sp_list, start, end):
         FROM `tabSales Invoice Item` sii 
         INNER JOIN `tabSales Invoice` si ON sii.parent = si.name 
         INNER JOIN `tabItem` i ON sii.item_code = i.name
-        WHERE si.docstatus = 1 
-            AND i.item_group = 'Watch'
+        WHERE si.docstatus = 1
             AND sii.sales_person IN %(sp_list)s 
             AND si.posting_date BETWEEN %(start)s AND %(end)s
         """,
