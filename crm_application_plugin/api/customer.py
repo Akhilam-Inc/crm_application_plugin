@@ -125,6 +125,22 @@ def get_last_contacted_date(customer):
     return last_contacted_date[0]["last_contacted"] if last_contacted_date else None
 
 
+def get_sales_person_for_current_user():
+    user = frappe.session.user
+
+    emp = frappe.db.get_value("Employee", {"user_id": user}, "name")
+    if not emp:
+        create_response(406, f"User not linked with Employee: {user}")
+        return
+
+    sales_person = frappe.db.get_value("Sales Person", {"employee": emp}, "name")
+    if not sales_person:
+        create_response(406, f"Employee not linked with Sales Person: {emp}")
+        return
+
+    return sales_person
+
+
 @frappe.whitelist()
 def get_unassigned_customer_list():
     try:
@@ -347,9 +363,14 @@ def get_customer_detail(customer_name):
             as_dict=1,
         )
 
-        customer_detail[0]["active_campaigns"] = active_campaigns
-
         if customer_detail:
+            customer_detail[0]["active_campaigns"] = active_campaigns
+            customer_detail[0]["custom_incognito"] = (
+                0
+                if customer_detail[0]["custom_sales_person"]
+                == get_sales_person_for_current_user()
+                else customer_detail[0]["custom_incognito"]
+            )
             create_response(200, "Customer Fetched!", customer_detail[0])
             return
         else:
