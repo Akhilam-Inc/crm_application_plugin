@@ -125,6 +125,22 @@ def get_last_contacted_date(customer):
     return last_contacted_date[0]["last_contacted"] if last_contacted_date else None
 
 
+def get_sales_person_for_current_user():
+    user = frappe.session.user
+
+    emp = frappe.db.get_value("Employee", {"user_id": user}, "name")
+    if not emp:
+        create_response(406, f"User not linked with Employee: {user}")
+        return
+
+    sales_person = frappe.db.get_value("Sales Person", {"employee": emp}, "name")
+    if not sales_person:
+        create_response(406, f"Employee not linked with Sales Person: {emp}")
+        return
+
+    return sales_person
+
+
 @frappe.whitelist()
 def get_unassigned_customer_list():
     try:
@@ -347,9 +363,14 @@ def get_customer_detail(customer_name):
             as_dict=1,
         )
 
-        customer_detail[0]["active_campaigns"] = active_campaigns
-
         if customer_detail:
+            customer_detail[0]["active_campaigns"] = active_campaigns
+            customer_detail[0]["custom_incognito"] = (
+                0
+                if customer_detail[0]["custom_sales_person"]
+                == get_sales_person_for_current_user()
+                else customer_detail[0]["custom_incognito"]
+            )
             create_response(200, "Customer Fetched!", customer_detail[0])
             return
         else:
@@ -567,3 +588,59 @@ def get_lead_source():
     except Exception as e:
         create_response(406, "Lead Source List Fetch Failed!", str(e))
         return
+
+
+@frappe.whitelist()
+def get_sales_person_wise_customer_birthday_reminders():
+    try:
+        # Pagination
+        limit = 20
+        offset = int(frappe.form_dict.get("offset", 0))
+
+        # Current User → Employee
+        employee = frappe.db.get_value(
+            "Employee", {"user_id": frappe.session.user}, "name"
+        )
+
+        if not employee:
+            return create_response(406, "Employee not found for current user.", [])
+
+        # Employee → Sales Person
+        sales_person = frappe.db.get_value(
+            "Sales Person", {"employee": employee}, "name"
+        )
+
+        if not sales_person:
+            return create_response(406, "Sales Person not found.", [])
+
+        today = frappe.utils.today()
+
+        birthday_reminders = frappe.db.sql(
+            """
+            SELECT
+                name,
+                customer_name,
+                custom_contact,
+                custom_date_of_birth
+            FROM `tabCustomer`
+            WHERE
+                custom_sales_person = %s
+                AND custom_date_of_birth IS NOT NULL
+                AND DAY(custom_date_of_birth) = DAY(%s)
+                AND MONTH(custom_date_of_birth) = MONTH(%s)
+            ORDER BY customer_name
+            LIMIT %s OFFSET %s
+            """,
+            (sales_person, today, today, limit, offset),
+            as_dict=True,
+        )
+
+        return create_response(
+            200, "Customer birthday reminders fetched successfully.", birthday_reminders
+        )
+
+    except Exception:
+        frappe.log_error(
+            frappe.get_traceback(), "Customer Birthday Reminder (Sales Person Wise)"
+        )
+        return create_response(500, "Something went wrong.", [])
