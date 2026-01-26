@@ -286,6 +286,7 @@ def create_customer(
                 "custom_sales_person": sales_person or "",
                 "custom_source": source or "",
                 "custom_custom_name": customer_name + " - " + mobile_number,
+                "custom_email": email_address or "",
             }
         )
 
