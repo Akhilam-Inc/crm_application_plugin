@@ -1,3 +1,5 @@
+from datetime import date, timedelta
+
 import frappe
 from crm_application_plugin.api.home import get_sales_person_herarchy
 from crm_application_plugin.api.utils import create_response
@@ -592,7 +594,7 @@ def get_lead_source():
 
 
 @frappe.whitelist()
-def get_sales_person_wise_customer_birthday_reminders():
+def birthday_reminders():
     try:
         # Pagination
         limit = 20
@@ -614,25 +616,45 @@ def get_sales_person_wise_customer_birthday_reminders():
         if not sales_person:
             return create_response(406, "Sales Person not found.", [])
 
-        today = frappe.utils.today()
+        today = date.today()
+        one_month_later = today + timedelta(days=30)
+
+        start = int(today.strftime("%m%d"))
+        end = int(one_month_later.strftime("%m%d"))
+
+        if start <= end:
+            # No wrap-around
+            where_clause = """
+                DATE_FORMAT(custom_date_of_birth, '%%m%%d') BETWEEN %s AND %s
+            """
+            params = (sales_person, start, end, limit, offset)
+        else:
+            # Wrap-around (December → January)
+            where_clause = """
+                (
+                    DATE_FORMAT(custom_date_of_birth, '%%m%%d') BETWEEN %s AND 1231
+                    OR DATE_FORMAT(custom_date_of_birth, '%%m%%d') BETWEEN 0101 AND %s
+                )
+            """
+            params = (sales_person, start, end, limit, offset)
 
         birthday_reminders = frappe.db.sql(
-            """
-            SELECT
-                name,
-                customer_name,
-                custom_contact,
-                custom_date_of_birth
-            FROM `tabCustomer`
-            WHERE
-                custom_sales_person = %s
-                AND custom_date_of_birth IS NOT NULL
-                AND DAY(custom_date_of_birth) = DAY(%s)
-                AND MONTH(custom_date_of_birth) = MONTH(%s)
-            ORDER BY customer_name
-            LIMIT %s OFFSET %s
+            f"""
+                SELECT
+                    name,
+                    customer_name,
+                    custom_contact,
+                    custom_date_of_birth,
+                    DATE_FORMAT(custom_date_of_birth, '%%d-%%m') as date_month_of_birth
+                FROM `tabCustomer`
+                WHERE
+                    custom_sales_person = %s
+                    AND custom_date_of_birth IS NOT NULL
+                    AND {where_clause}
+                ORDER BY custom_date_of_birth ASC
+                LIMIT %s OFFSET %s
             """,
-            (sales_person, today, today, limit, offset),
+            params,
             as_dict=True,
         )
 
@@ -645,3 +667,135 @@ def get_sales_person_wise_customer_birthday_reminders():
             frappe.get_traceback(), "Customer Birthday Reminder (Sales Person Wise)"
         )
         return create_response(500, "Something went wrong.", [])
+
+
+@frappe.whitelist()
+def get_customer_journey(customer):
+    try:
+        page = int(frappe.form_dict.get("page", 1))
+        page_size = 20
+        limit = page_size
+        offset = (page - 1) * page_size
+
+        if not customer:
+            create_response(422, "Invalid request data", "Customer is required.")
+            return
+
+        # 1️⃣ Fetch Creation journey (NO pagination)
+        creation_journey = frappe.db.sql(
+            """
+            SELECT
+                cj.journey_date,
+                cj.sales_person,
+                cj.description,
+                cj.journey_type,
+                cj.loss_of_sale_watch_reference as reference,
+                cj.boutique
+            FROM `tabCustomer Journey` cj
+            WHERE
+                cj.parent = %(customer)s
+                AND cj.journey_type = 'Creation'
+            ORDER BY cj.journey_date DESC
+            """,
+            {"customer": customer},
+            as_dict=1,
+        )
+
+        # 2️⃣ Fetch paginated journeys (excluding Creation)
+        journey = frappe.db.sql(
+            """
+            SELECT
+                cj.journey_date,
+                cj.sales_person,
+                cj.description,
+                cj.journey_type,
+                cj.loss_of_sale_watch_reference as reference,
+                cj.boutique
+            FROM `tabCustomer Journey` cj
+            WHERE
+                cj.parent = %(customer)s
+                AND cj.journey_type != 'Creation'
+            ORDER BY cj.journey_date DESC
+            LIMIT %(limit)s OFFSET %(offset)s
+            """,
+            {
+                "customer": customer,
+                "limit": limit,
+                "offset": offset,
+            },
+            as_dict=1,
+        )
+
+        # 3️⃣ Total count (excluding Creation)
+        total_count = frappe.db.sql(
+            """
+            SELECT COUNT(*)
+            FROM `tabCustomer Journey`
+            WHERE
+                parent = %(customer)s
+                AND (journey_type IS NULL OR journey_type != 'Creation')
+            """,
+            {"customer": customer},
+        )[0][0]
+
+        response = {
+            "creation_journey": creation_journey,
+            "others": journey,
+            "pagination": {
+                "limit": limit,
+                "offset": offset,
+                "total_records": total_count,
+                "has_next": offset + limit < total_count,
+            },
+        }
+
+        create_response(200, "Customer Journey Fetched!", response)
+        return
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "get_customer_journey error")
+        create_response(406, "Internal server error", str(e))
+        return
+
+
+@frappe.whitelist()
+def create_customer_journey_entry(customer, journey_date, reference, notes, boutique):
+    try:
+        if (
+            not customer
+            or not journey_date
+            or not notes
+            or not reference
+            or not boutique
+        ):
+            create_response(
+                422,
+                "Invalid request data",
+                "Customer, Journey Date and Reference, Boutique are required.",
+            )
+            return
+
+        customer_doc = frappe.get_doc("Customer", customer)
+        if not customer_doc:
+            create_response(406, "Customer not found.")
+            return
+        customer_doc.append(
+            "custom_customer_journey",
+            {
+                "journey_date": frappe.utils.get_datetime(journey_date),
+                "journey_type": "Client Visit",
+                "description": notes,
+                "loss_of_sale_watch_reference": reference,
+                "boutique": boutique,
+                "sales_person": get_sales_person_for_current_user(),
+            },
+        )
+        customer_doc.save(ignore_permissions=True)
+
+        create_response(200, "Customer Journey Entry Created Successfully")
+        return
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "create_customer_journey_entry error")
+        create_response(406, "Internal server error", str(e))
+        return
