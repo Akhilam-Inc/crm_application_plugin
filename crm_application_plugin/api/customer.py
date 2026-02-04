@@ -4,7 +4,7 @@ import frappe
 from crm_application_plugin.api.home import get_sales_person_herarchy
 from crm_application_plugin.api.utils import create_response
 from frappe.contacts.doctype.address.address import get_address_display
-
+from datetime import datetime
 
 @frappe.whitelist()
 def get_assigned_customer_list(salesperson=None):
@@ -672,10 +672,10 @@ def birthday_reminders():
 @frappe.whitelist()
 def get_customer_journey(customer):
     try:
-        page = int(frappe.form_dict.get("page", 1))
+        page = int(frappe.form_dict.get("page", 0))
         page_size = 20
         limit = page_size
-        offset = (page - 1) * page_size
+        offset = (page) * page_size
 
         if not customer:
             create_response(422, "Invalid request data", "Customer is required.")
@@ -782,7 +782,10 @@ def create_customer_journey_entry(customer, journey_date, reference, notes, bout
         customer_doc.append(
             "custom_customer_journey",
             {
-                "journey_date": frappe.utils.get_datetime(journey_date),
+                "journey_date": datetime.strptime(
+                    journey_date,
+                    "%d-%m-%Y %H:%M:%S"
+                ),
                 "journey_type": "Client Visit",
                 "description": notes,
                 "loss_of_sale_watch_reference": reference,
