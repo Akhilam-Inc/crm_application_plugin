@@ -377,6 +377,13 @@ def achvievement():
         frappe.local.form_dict.get("from"), frappe.local.form_dict.get("to")
     )
 
+    prev_year = start_date.year - 1
+    month = start_date.month
+    e_month = end_date.month
+
+    prev_start = get_first_day(f"{prev_year}-{month}-01")
+    prev_end = get_last_day(f"{prev_year}-{e_month}-01")
+
     sales_persons = frappe.local.form_dict.sales_persons or ""
     if sales_persons:
         sp_list = sales_persons.split(",")
@@ -385,10 +392,11 @@ def achvievement():
 
     # Fetch metrics and watch quantity for the specific item group 'Watch'
     sales_data = get_achived_range_sql(sp_list, start_date, end_date)
+    sales_data_previous_year = get_achived_range_sql_watch(sp_list, prev_start, prev_end)
     watch_qty = get_watch_qty_range_sql(sp_list, start_date, end_date)
 
     achieved = sales_data[0]["sales"] if sales_data else 0
-    unit_per_trans = sales_data[0]["unit_per_trans"] if sales_data else 0
+    unit_per_trans = sales_data_previous_year[0]["sales"] if sales_data_previous_year else 0
     avg_amt_inv = sales_data[0]["avg_amt_per_invoice"] if sales_data else 0
 
     # Debug Log for the specific range and results
@@ -680,3 +688,25 @@ def get_watch_qty_range_sql(sp_list, start, end):
         as_dict=1,
     )
     return res[0]["watch_qty"] if res else 0
+
+def get_achived_range_sql_watch(sp_list, start, end):
+    """Calculates sales metrics for a specific date range, restricted to 'Watch' item group."""
+    return frappe.db.sql(
+        """
+        SELECT 
+            SUM(sii.amount) AS sales, 
+            COUNT(DISTINCT si.name) AS si_count, 
+            SUM(sii.qty) AS itm_qty, 
+            SUM(sii.qty) / NULLIF(COUNT(DISTINCT si.name), 0) AS unit_per_trans, 
+            SUM(sii.amount) / NULLIF(COUNT(DISTINCT si.name), 0) AS avg_amt_per_invoice  
+        FROM `tabSales Invoice Item` sii 
+        INNER JOIN `tabSales Invoice` si ON sii.parent = si.name 
+        INNER JOIN `tabItem` i ON sii.item_code = i.name
+        WHERE si.docstatus = 1
+            AND sii.sales_person IN %(sp_list)s 
+            AND si.posting_date BETWEEN %(start)s AND %(end)s
+            AND i.item_group = 'Watch'
+        """,
+        {"sp_list": sp_list, "start": start, "end": end},
+        as_dict=1,
+    )
