@@ -346,3 +346,31 @@ def stock_list_other_botique(item):
     except Exception:
         create_response(406, "Something went Wrong!", frappe.get_traceback())
         return
+
+
+@frappe.whitelist(allow_guest=True)
+def share_preview(image_url, pdf_url):
+    # Set type to 'none' so Frappe doesn't run its default build_response logic
+    frappe.response["type"] = "none"
+    
+    html = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Art of Time</title>
+    <meta property="og:title" content="Product Catalog">
+    <meta property="og:description" content="Click to view your catalog.">
+    <meta property="og:image" content="{image_url}">
+    <meta property="og:type" content="website">
+    
+    <script type="text/javascript">
+        window.location.href = "{pdf_url}";
+    </script>
+</head>
+<body>Redirecting...</body>
+</html>"""
+
+    # Directly modify the local response object
+    frappe.local.response.data = html
+    frappe.local.response.status_code = 200
+    frappe.local.response.headers["Content-Type"] = "text/html"
