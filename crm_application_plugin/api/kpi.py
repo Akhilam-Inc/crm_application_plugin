@@ -393,7 +393,8 @@ def achvievement():
     # Fetch metrics and watch quantity for the specific item group 'Watch'
     sales_data = get_achived_range_sql(sp_list, start_date, end_date)
     sales_data_previous_year = get_achived_range_sql_watch(sp_list, prev_start, prev_end)
-    watch_qty = get_watch_qty_range_sql(sp_list, start_date, end_date)
+    watch_qty = get_watch_qty_range_sql(sp_list, start_date, end_date) or 0
+    watch_qty_last = get_watch_qty_range_sql(sp_list, prev_start, prev_end) or 0
 
     achieved = sales_data[0]["sales"] if sales_data else 0
     unit_per_trans = sales_data_previous_year[0]["sales"] if sales_data_previous_year else 0
@@ -412,12 +413,15 @@ def achvievement():
 
     # Normalize metrics based on Watch quantity
     if watch_qty:
-        unit_per_trans = unit_per_trans / watch_qty
+        # unit_per_trans = unit_per_trans / watch_qty
         avg_amt_inv = avg_amt_inv / watch_qty
     else:
-        unit_per_trans = 0
+        # unit_per_trans = 0
         avg_amt_inv = 0
-
+    if watch_qty_last:
+        unit_per_trans = unit_per_trans / watch_qty_last
+    else:
+        unit_per_trans = 0
     # Updated response data including watch_qty
     response_data = {
         "achvievement": achieved,
