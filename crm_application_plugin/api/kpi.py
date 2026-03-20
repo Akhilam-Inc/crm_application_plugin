@@ -393,12 +393,13 @@ def achvievement():
     # Fetch metrics and watch quantity for the specific item group 'Watch'
     sales_data = get_achived_range_sql(sp_list, start_date, end_date)
     sales_data_previous_year = get_achived_range_sql_watch(sp_list, prev_start, prev_end)
+    average_watch_sale = get_achived_range_watch_sql(sp_list, start_date, end_date)
     watch_qty = get_watch_qty_range_sql(sp_list, start_date, end_date) or 0
     watch_qty_last = get_watch_qty_range_sql(sp_list, prev_start, prev_end) or 0
 
     achieved = sales_data[0]["sales"] if sales_data else 0
     unit_per_trans = sales_data_previous_year[0]["sales"] if sales_data_previous_year else 0
-    avg_amt_inv = sales_data[0]["avg_amt_per_invoice"] if sales_data else 0
+    avg_amt_inv = average_watch_sale[0]["sales"] if average_watch_sale else 0
 
     # Debug Log for the specific range and results
     frappe.log_error(
@@ -647,7 +648,27 @@ def get_achived_range_sql(sp_list, start, end):
         {"sp_list": sp_list, "start": start, "end": end},
         as_dict=1,
     )
-
+def get_achived_range_watch_sql(sp_list, start, end):
+    """Calculates sales metrics for a specific date range, restricted to 'Watch' item group."""
+    return frappe.db.sql(
+        """
+        SELECT 
+            SUM(sii.amount) AS sales, 
+            COUNT(DISTINCT si.name) AS si_count, 
+            SUM(sii.qty) AS itm_qty, 
+            SUM(sii.qty) / NULLIF(COUNT(DISTINCT si.name), 0) AS unit_per_trans, 
+            SUM(sii.amount) / NULLIF(COUNT(DISTINCT si.name), 0) AS avg_amt_per_invoice  
+        FROM `tabSales Invoice Item` sii 
+        INNER JOIN `tabSales Invoice` si ON sii.parent = si.name 
+        INNER JOIN `tabItem` i ON sii.item_code = i.name
+        WHERE si.docstatus = 1
+            AND sii.sales_person IN %(sp_list)s 
+            AND si.posting_date BETWEEN %(start)s AND %(end)s
+            AND i.item_group = 'Watch'
+        """,
+        {"sp_list": sp_list, "start": start, "end": end},
+        as_dict=1,
+    )
 
 def get_boutique_cc_achievement_sql(boutiques, start, end):
     """Calculates total sales based on boutique cost centers for the 'Watch' item group."""
