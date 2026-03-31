@@ -324,6 +324,7 @@ def target():
         sp_list = [sales_person]
 
     total_target = 0
+    total_qty = 0
     current_iter = start_date
 
     # Iterate through months in the range to accumulate target amounts
@@ -341,6 +342,7 @@ def target():
         if fiscal_year:
             target_res = get_target_sql(sp_list, month_name, fiscal_year)
             total_target += target_res[0].tg_amt if target_res else 0
+            total_qty += target_res[0].target_qty if target_res else 0
 
         current_iter = add_months(current_iter, 1)
 
@@ -354,7 +356,7 @@ def target():
         },
     )
 
-    create_response(200, "Success", {"target": total_target})
+    create_response(200, "Success", {"target": total_target , "target_qty" : total_qty})
     return
 
 
@@ -615,12 +617,13 @@ def parse_range(from_str, to_str):
 def get_target_sql(sp_list, month_name, fiscal_year):
     return frappe.db.sql(
         """
-        SELECT (SUM(td.target_amount) * mdp.percentage_allocation) / 100 AS tg_amt 
+        SELECT (SUM(td.target_amount) * mdp.percentage_allocation) / 100 AS tg_amt, td.target_qty 
         FROM `tabTarget Detail` td 
         INNER JOIN `tabMonthly Distribution Percentage` mdp ON td.distribution_id = mdp.parent  
         WHERE td.parent IN %(sp_list)s 
             AND td.fiscal_year = %(fy)s 
-            AND mdp.month = %(m_name)s 
+            AND mdp.month = %(m_name)s
+            AND mdp.percentage_allocation > 0
         GROUP BY mdp.month
         """,
         {"sp_list": sp_list, "fy": fiscal_year, "m_name": month_name},
