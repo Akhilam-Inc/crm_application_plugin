@@ -5,6 +5,13 @@ from frappe.utils import get_url
 
 def get_context(context: dict) -> dict:
     """Prepare context for the PDF share wrapper page."""
+
+    # ── Critical: Disable Frappe's Redis page cache for this route ────────
+    # Frappe caches rendered portal page HTML in Redis. Without this flag,
+    # get_context() is skipped on every request after the first, and the
+    # stale PDF URL from the cached HTML is served — even in incognito.
+    context.no_cache = 1
+
     doc_name = frappe.form_dict.get("doc_name")
     image_url = frappe.form_dict.get("image_url")
 
@@ -12,9 +19,7 @@ def get_context(context: dict) -> dict:
         frappe.local.flags.redirect_location = "/"
         raise frappe.Redirect
 
-    # ── Fix #1: Prevent this page from being cached ──────────────────────────
-    # Without this, the browser caches the meta-refresh redirect and never
-    # re-runs get_context, serving the old PDF URL to every subsequent visitor.
+    # ── Also set HTTP headers to prevent browser/CDN caching ─────────────
     frappe.local.response["headers"] = {
         "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
         "Pragma": "no-cache",
@@ -24,9 +29,6 @@ def get_context(context: dict) -> dict:
     base_url = get_url()
 
     try:
-        # ── Fix #2: Use db.get_value to bypass Frappe's document-level cache ─
-        # frappe.get_doc() can return a stale cached object within the same
-        # request lifecycle. db.get_value() always hits the DB directly.
         file_data = frappe.db.get_value(
             "File",
             doc_name,
@@ -37,10 +39,6 @@ def get_context(context: dict) -> dict:
         if not file_data:
             raise frappe.DoesNotExistError
 
-        # ── Fix #3: Cache-bust the PDF URL using the file's modified timestamp ─
-        # If the file was replaced on disk at the same path, the browser would
-        # serve its cached copy. Appending ?v=<timestamp> forces a fresh fetch
-        # whenever the File doc's modified date changes.
         try:
             bust = int(file_data.modified.timestamp())
         except (AttributeError, OSError):
